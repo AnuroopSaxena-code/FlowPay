@@ -1,7 +1,7 @@
 import React, { useMemo } from 'react';
 import { useGroup } from '@/contexts/GroupContext';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { ArrowRight, CheckCircle2 } from 'lucide-react';
+import { ArrowRight, CheckCircle2, XCircle } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 const SettlementComparison = () => {
@@ -13,8 +13,25 @@ const SettlementComparison = () => {
   const actualPlan = useMemo(() => calculateOptimalSettlements(actualBalances), [actualBalances]);
   const simulatedPlan = useMemo(() => calculateOptimalSettlements(simulatedBalances), [simulatedBalances]);
 
-  // Helper to find matching settlement
-  const findMatch = (plan, fromId, toId) => plan.find(p => p.fromId === fromId && p.toId === toId);
+  // Consolidate both plans to show resolved, new, changed, and unchanged debts
+  const comparisonItems = useMemo(() => {
+    const pairMap = new Map();
+
+    actualPlan.forEach(p => {
+      pairMap.set(`${p.fromId}-${p.toId}`, { key: `${p.fromId}-${p.toId}`, actual: p, simulated: null });
+    });
+
+    simulatedPlan.forEach(p => {
+      const key = `${p.fromId}-${p.toId}`;
+      if (pairMap.has(key)) {
+        pairMap.get(key).simulated = p;
+      } else {
+        pairMap.set(key, { key, actual: null, simulated: p });
+      }
+    });
+
+    return Array.from(pairMap.values());
+  }, [actualPlan, simulatedPlan]);
 
   return (
     <div className="grid md:grid-cols-2 gap-6 mt-6">
@@ -50,46 +67,84 @@ const SettlementComparison = () => {
         <CardContent className="pt-4 space-y-3">
           <AnimatePresence mode="popLayout">
             {simulatedPlan.length === 0 ? (
-              <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="text-sm text-purple-600/70 text-center py-4 flex flex-col items-center">
+              <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="text-sm text-purple-600/70 text-center flex flex-col items-center">
                 <CheckCircle2 className="w-8 h-8 mb-2 text-purple-400" />
-                Simulation results in all debts settled!
+                Simulation results in all debts totally settled!
               </motion.p>
-            ) : (
-              simulatedPlan.map((s, i) => {
-                const actualMatch = findMatch(actualPlan, s.fromId, s.toId);
-                let statusClass = "bg-white dark:bg-slate-900 border-purple-100 dark:border-purple-800";
-                let badge = null;
+            ) : null}
 
-                if (!actualMatch) {
-                  statusClass = "bg-purple-50 dark:bg-purple-900/20 border-purple-300 dark:border-purple-700";
-                  badge = <span className="text-[10px] uppercase tracking-wider font-bold text-purple-600 bg-purple-100 px-1.5 py-0.5 rounded ml-2">New</span>;
-                } else if (Math.abs(actualMatch.amount - s.amount) > 0.01) {
-                  statusClass = "bg-amber-50 dark:bg-amber-900/20 border-amber-200 dark:border-amber-800";
-                  const diff = s.amount - actualMatch.amount;
-                  badge = <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded ml-2 ${diff > 0 ? 'text-rose-600 bg-rose-100' : 'text-emerald-600 bg-emerald-100'}`}>
+            {comparisonItems.map((item) => {
+              const { actual, simulated, key } = item;
+
+              if (actual && !simulated) {
+                // Debt completely resolved
+                return (
+                  <motion.div 
+                    key={key} layout initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
+                    className="flex items-center justify-between p-3 rounded-lg border bg-slate-50 opacity-60 border-slate-200 dark:bg-slate-900/40 relative overflow-hidden"
+                  >
+                    <div className="absolute inset-x-0 h-[1.5px] bg-slate-400 dark:bg-slate-600 top-1/2 -translate-y-1/2 z-10 w-full" />
+                    <div className="flex items-center gap-2 text-sm relative z-0">
+                      <span className="font-medium text-slate-500 dark:text-slate-400">{actual.from}</span>
+                      <ArrowRight className="w-4 h-4 text-slate-400" />
+                      <span className="font-medium text-slate-500 dark:text-slate-400">{actual.to}</span>
+                      <span className="text-[10px] uppercase tracking-wider font-bold text-emerald-600 bg-emerald-100/80 px-1.5 py-0.5 rounded ml-2">Resolved</span>
+                    </div>
+                    <span className="font-bold text-slate-400 relative z-0">₹{actual.amount.toFixed(2)}</span>
+                  </motion.div>
+                );
+              }
+
+              if (!actual && simulated) {
+                // Completely new debt formulated
+                return (
+                  <motion.div 
+                    key={key} layout initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
+                    className="flex items-center justify-between p-3 rounded-lg border bg-purple-50 dark:bg-purple-900/20 border-purple-300 dark:border-purple-700 transition-colors"
+                  >
+                    <div className="flex items-center gap-2 text-sm">
+                      <span className="font-medium text-rose-600 dark:text-rose-400">{simulated.from}</span>
+                      <ArrowRight className="w-4 h-4 text-slate-400" />
+                      <span className="font-medium text-emerald-600 dark:text-emerald-400">{simulated.to}</span>
+                      <span className="text-[10px] uppercase tracking-wider font-bold text-purple-600 bg-purple-100 px-1.5 py-0.5 rounded ml-2">New</span>
+                    </div>
+                    <span className="font-bold text-purple-900 dark:text-purple-100">₹{simulated.amount.toFixed(2)}</span>
+                  </motion.div>
+                );
+              }
+
+              if (actual && simulated) {
+                // Debt changed or remained the same
+                const diff = simulated.amount - actual.amount;
+                const changed = Math.abs(diff) > 0.01;
+                const statusClass = changed 
+                  ? "bg-amber-50 dark:bg-amber-900/20 border-amber-200 dark:border-amber-800" 
+                  : "bg-white dark:bg-slate-900 border-purple-100 dark:border-purple-800";
+                
+                const badge = changed ? (
+                  <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded ml-2 ${diff > 0 ? 'text-rose-600 bg-rose-100' : 'text-emerald-600 bg-emerald-100'}`}>
                     {diff > 0 ? '+' : ''}₹{diff.toFixed(2)}
-                  </span>;
-                }
+                  </span>
+                ) : null;
 
                 return (
                   <motion.div 
-                    key={`${s.fromId}-${s.toId}`}
-                    layout
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
+                    key={key} layout initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
                     className={`flex items-center justify-between p-3 rounded-lg border ${statusClass} transition-colors`}
                   >
                     <div className="flex items-center gap-2 text-sm">
-                      <span className="font-medium text-rose-600 dark:text-rose-400">{s.from}</span>
+                      <span className="font-medium text-rose-600 dark:text-rose-400">{simulated.from}</span>
                       <ArrowRight className="w-4 h-4 text-slate-400" />
-                      <span className="font-medium text-emerald-600 dark:text-emerald-400">{s.to}</span>
+                      <span className="font-medium text-emerald-600 dark:text-emerald-400">{simulated.to}</span>
                       {badge}
                     </div>
-                    <span className="font-bold text-purple-900 dark:text-purple-100">₹{s.amount.toFixed(2)}</span>
+                    <span className="font-bold text-purple-900 dark:text-purple-100">₹{simulated.amount.toFixed(2)}</span>
                   </motion.div>
                 );
-              })
-            )}
+              }
+
+              return null;
+            })}
           </AnimatePresence>
         </CardContent>
       </Card>
