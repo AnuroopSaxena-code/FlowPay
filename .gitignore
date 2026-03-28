@@ -1,0 +1,7 @@
+node_modules/
+dist/
+.env
+
+# PocketBase
+apps/pocketbase/pocketbase.exe
+apps/pocketbase/pb_data/

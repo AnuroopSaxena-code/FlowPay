@@ -39,9 +39,14 @@ const SignupPage = () => {
       toast({ title: 'Success', description: 'Account created successfully' });
       navigate('/dashboard');
     } catch (error) {
+      const errorMessage = error.response?.message || error.data?.message || 'Failed to create account.';
+      const detailedErrors = error.response?.data ? Object.entries(error.response.data).map(([field, err]) => `${field}: ${err.message}`).join(', ') : '';
+      
+      console.error("Signup error:", error);
+      
       toast({
         title: 'Error',
-        description: error.message || 'Failed to create account.',
+        description: detailedErrors ? `${errorMessage} - ${detailedErrors}` : errorMessage,
         variant: 'destructive'
       });
     } finally {

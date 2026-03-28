@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { PieChart, Mail, Heart } from 'lucide-react';
+import { PieChart, Mail } from 'lucide-react';
 
 const Footer = () => {
   const currentYear = new Date().getFullYear();
@@ -48,9 +48,7 @@ const Footer = () => {
             &copy; {currentYear} FlowPay. All rights reserved.
           </p>
           <div className="flex items-center gap-1 text-sm text-slate-500 dark:text-slate-400 bg-slate-50 dark:bg-slate-900 px-4 py-2 rounded-full border border-slate-100 dark:border-slate-800">
-            <span>Made with</span>
-            <Heart className="w-4 h-4 text-rose-500 fill-rose-500" />
-            <span>by</span>
+            <span>Made by</span>
             <span className="font-medium text-slate-900 dark:text-slate-100">Anuroop Saxena</span>
             <span className="text-xs text-slate-400 ml-1">(24BDS0163)</span>
           </div>
