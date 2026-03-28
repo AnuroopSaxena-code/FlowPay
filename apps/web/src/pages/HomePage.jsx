@@ -4,8 +4,11 @@ import { Helmet } from 'react-helmet';
 import { Button } from '@/components/ui/button';
 import { ArrowRight, PieChart, Users, Receipt, ShieldCheck } from 'lucide-react';
 import { motion } from 'framer-motion';
+import { useAuth } from '@/contexts/AuthContext';
 
 const HomePage = () => {
+  const { currentUser } = useAuth();
+
   return (
     <>
       <Helmet>
@@ -59,17 +62,28 @@ const HomePage = () => {
                 transition={{ duration: 0.5, delay: 0.3 }}
                 className="flex flex-wrap gap-4"
               >
-                <Link to="/signup">
-                  <Button size="lg" className="bg-teal-500 hover:bg-teal-600 text-white px-8 py-6 text-lg rounded-full shadow-lg hover:shadow-teal-500/25 transition-all">
-                    Get Started Free
-                    <ArrowRight className="ml-2 w-5 h-5" />
-                  </Button>
-                </Link>
-                <Link to="/login">
-                  <Button size="lg" variant="outline" className="px-8 py-6 text-lg rounded-full border-slate-600 text-slate-300 hover:bg-slate-800 hover:text-white transition-all">
-                    Sign In
-                  </Button>
-                </Link>
+                {currentUser ? (
+                  <Link to="/dashboard">
+                    <Button size="lg" className="bg-teal-500 hover:bg-teal-600 text-white px-8 py-6 text-lg rounded-full shadow-lg hover:shadow-teal-500/25 transition-all">
+                      Go to Dashboard
+                      <ArrowRight className="ml-2 w-5 h-5" />
+                    </Button>
+                  </Link>
+                ) : (
+                  <>
+                    <Link to="/signup">
+                      <Button size="lg" className="bg-teal-500 hover:bg-teal-600 text-white px-8 py-6 text-lg rounded-full shadow-lg hover:shadow-teal-500/25 transition-all">
+                        Get Started Free
+                        <ArrowRight className="ml-2 w-5 h-5" />
+                      </Button>
+                    </Link>
+                    <Link to="/login">
+                      <Button size="lg" variant="outline" className="px-8 py-6 text-lg rounded-full border-slate-600 text-slate-300 hover:bg-slate-800 hover:text-white transition-all">
+                        Sign In
+                      </Button>
+                    </Link>
+                  </>
+                )}
               </motion.div>
             </div>
           </div>
