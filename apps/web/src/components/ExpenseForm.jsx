@@ -95,8 +95,20 @@ const ExpenseForm = ({ expenseToEdit, onSuccess, onCancel }) => {
     setSplitMode('equal');
   };
 
+  const handleAmountChange = (memberId, value) => {
+    const totalAmount = parseFloat(formData.amount) || 0;
+    if (totalAmount <= 0) return;
+
+    const numValue = parseFloat(value) || 0;
+    const percentage = (numValue / totalAmount) * 100;
+    
+    setSplits(prev => ({ ...prev, [memberId]: percentage }));
+    setSplitMode('custom');
+  };
+
   const totalPercentage = Object.values(splits).reduce((sum, val) => sum + (parseFloat(val) || 0), 0);
   const isPercentageValid = Math.abs(totalPercentage - 100) < 0.1;
+  const currentTotalAmount = (parseFloat(formData.amount) || 0) * (totalPercentage / 100);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -144,7 +156,7 @@ const ExpenseForm = ({ expenseToEdit, onSuccess, onCancel }) => {
   }
 
   return (
-    <Card className="border-teal-100 dark:border-teal-900 shadow-md">
+    <Card className="border-teal-100 dark:border-teal-900 shadow-md bg-white dark:bg-slate-950">
       <CardHeader className="bg-teal-50/50 dark:bg-teal-950/20 border-b border-teal-100 dark:border-teal-900">
         <CardTitle>{expenseToEdit ? 'Edit Expense' : 'Add New Expense'}</CardTitle>
       </CardHeader>
@@ -183,41 +195,60 @@ const ExpenseForm = ({ expenseToEdit, onSuccess, onCancel }) => {
             </div>
           </div>
 
-          <div className="space-y-3 border rounded-lg p-4 bg-muted/20">
-            <div className="flex items-center justify-between mb-2">
+          <div className="space-y-3 border border-slate-200 dark:border-slate-800 rounded-lg p-4 bg-slate-50/50 dark:bg-slate-900/50">
+            <div className="flex items-center justify-between mb-3 border-b border-slate-200 dark:border-slate-800 pb-3">
               <label className="text-sm font-medium flex items-center gap-2">
                 <SplitSquareHorizontal className="w-4 h-4" /> Split Details
               </label>
-              <Button type="button" variant="outline" size="sm" onClick={setEqualSplits} className={splitMode === 'equal' ? 'bg-teal-50 text-teal-700 border-teal-200' : ''}>
+              <Button type="button" variant="outline" size="sm" onClick={setEqualSplits} className={splitMode === 'equal' ? 'bg-teal-50 text-teal-700 border-teal-200 dark:bg-teal-900/30 dark:text-teal-400 dark:border-teal-800' : ''}>
                 Split Equally
               </Button>
             </div>
             
-            <div className="space-y-2 max-h-48 overflow-y-auto pr-2">
-              {members.map(m => (
-                <div key={m.id} className="flex items-center gap-3">
-                  <span className="flex-1 text-sm truncate">{m.name}</span>
-                  <div className="flex items-center gap-2 w-32">
-                    <Input 
-                      type="number" 
-                      step="0.1" 
-                      min="0" 
-                      max="100"
-                      value={splits[m.id] || ''} 
-                      onChange={e => handleSplitChange(m.id, e.target.value)}
-                      className="h-8 text-right"
-                    />
-                    <span className="text-sm text-muted-foreground">%</span>
+            <div className="space-y-2 max-h-60 overflow-y-auto pr-2">
+              {members.map(m => {
+                const percValue = splits[m.id] || 0;
+                const amtValue = ((parseFloat(formData.amount) || 0) * (percValue / 100));
+
+                return (
+                  <div key={m.id} className="flex flex-col sm:flex-row sm:items-center gap-3 py-1">
+                    <span className="flex-1 text-sm font-medium sm:font-normal truncate">{m.name}</span>
+                    <div className="flex items-center gap-4 justify-between sm:justify-end">
+                      
+                      <div className="flex items-center gap-2 w-28">
+                        <Input 
+                          type="number" step="0.01" min="0" max="100"
+                          value={splits[m.id] !== undefined ? Number(splits[m.id].toFixed(4)) : ''} 
+                          onChange={e => handleSplitChange(m.id, e.target.value)}
+                          className="h-8 text-right bg-white dark:bg-slate-950"
+                        />
+                        <span className="text-sm font-medium text-muted-foreground w-4">%</span>
+                      </div>
+
+                      <div className="flex items-center gap-2 w-32">
+                        <span className="text-sm font-medium text-muted-foreground">₹</span>
+                        <Input 
+                          type="number" step="0.01" min="0"
+                          value={amtValue ? Number(amtValue.toFixed(2)) : ''}
+                          onChange={e => handleAmountChange(m.id, e.target.value)}
+                          className="h-8 text-right bg-white dark:bg-slate-950"
+                          disabled={!parseFloat(formData.amount)}
+                          placeholder="0.00"
+                        />
+                      </div>
+
+                    </div>
                   </div>
-                  <div className="w-24 text-right text-sm text-muted-foreground">
-                    ₹{((parseFloat(formData.amount) || 0) * ((splits[m.id] || 0) / 100)).toFixed(2)}
-                  </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
             
-            <div className={`text-sm text-right font-medium pt-2 border-t ${isPercentageValid ? 'text-emerald-600' : 'text-rose-600'}`}>
-              Total: {totalPercentage.toFixed(1)}%
+            <div className={`flex justify-between items-center text-sm font-medium pt-3 mt-2 border-t border-slate-200 dark:border-slate-800 ${isPercentageValid ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}`}>
+              <span>Current Split Sum:</span>
+              <div className="flex items-center gap-4">
+                <span className="w-28 flex justify-end pr-6">{totalPercentage.toFixed(1)}%</span>
+                <span className="w-32 flex justify-end">₹{currentTotalAmount.toFixed(2)}</span>
+              </div>
             </div>
           </div>
 
