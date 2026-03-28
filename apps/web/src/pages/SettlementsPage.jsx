@@ -6,7 +6,6 @@ import SimulationPanel from '@/components/SimulationPanel';
 import SimulationComparison from '@/components/SimulationComparison';
 import SettlementComparison from '@/components/SettlementComparison';
 import SimulationHistory from '@/components/SimulationHistory';
-import CelebrationModal from '@/components/CelebrationModal';
 import { useGroup } from '@/contexts/GroupContext';
 import { Button } from '@/components/ui/button';
 import { FlaskConical, Save, XCircle, RotateCcw, LogOut } from 'lucide-react';
@@ -29,45 +28,6 @@ const SettlementsPage = () => {
     calculateBalances
   } = useGroup();
 
-  const [showCelebration, setShowCelebration] = useState(false);
-  const [hasCelebrated, setHasCelebrated] = useState(false);
-
-  // Calculate actual balances to check if all settled
-  const actualBalances = useMemo(() => calculateBalances(members, expenses, settlements), [members, expenses, settlements]);
-  
-  useEffect(() => {
-    if (actualBalances.length > 0) {
-      const isAllSettled = actualBalances.every(b => Math.abs(b.balance) < 0.01);
-      // Only show celebration if there are actual expenses/settlements to settle, and we haven't celebrated yet
-      const hasActivity = expenses.length > 0 || settlements.length > 0;
-      
-      if (isAllSettled && hasActivity && !hasCelebrated) {
-        setShowCelebration(true);
-        setHasCelebrated(true);
-      } else if (!isAllSettled) {
-        // Reset celebration flag if debts reappear
-        setHasCelebrated(false);
-      }
-    }
-  }, [actualBalances, expenses.length, settlements.length, hasCelebrated]);
-
-  const handleShare = () => {
-    if (navigator.share) {
-      navigator.share({
-        title: 'FlowPay - All Settled!',
-        text: 'We just settled all our group expenses using FlowPay! 🎉',
-        url: window.location.origin,
-      }).catch(console.error);
-    } else {
-      navigator.clipboard.writeText('We just settled all our group expenses using FlowPay! 🎉 ' + window.location.origin);
-      toast({ title: 'Copied to clipboard', description: 'Share link copied to clipboard!' });
-    }
-  };
-
-  const handleNewGroup = () => {
-    setShowCelebration(false);
-    navigate('/dashboard');
-  };
 
   if (!currentGroupId) {
     return (
@@ -83,13 +43,6 @@ const SettlementsPage = () => {
       <Helmet>
         <title>Settlements - FlowPay</title>
       </Helmet>
-      
-      <CelebrationModal 
-        isOpen={showCelebration} 
-        onClose={() => setShowCelebration(false)} 
-        onShare={handleShare}
-        onNewGroup={handleNewGroup}
-      />
 
       <AnimatePresence>
         {simulationMode && (
