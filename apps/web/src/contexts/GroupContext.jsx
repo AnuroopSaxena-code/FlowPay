@@ -64,8 +64,7 @@ export const GroupProvider = ({ children }) => {
       // Firebase UID is used here instead of PocketBase ID
       const q = query(
         collection(db, "groups"), 
-        where("participants", "array-contains", currentUser.uid),
-        orderBy("created", "desc")
+        where("participants", "array-contains", currentUser.uid)
       );
       
       const querySnapshot = await getDocs(q);
@@ -74,7 +73,7 @@ export const GroupProvider = ({ children }) => {
         ...doc.data()
       }));
       
-      setGroups(records);
+      setGroups(records.sort((a, b) => (b.created?.seconds || 0) - (a.created?.seconds || 0)));
       
       if (records.length > 0 && (!currentGroupId || !records.find(g => g.id === currentGroupId))) {
         setCurrentGroupId(records[0].id);
