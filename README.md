@@ -20,6 +20,7 @@ FlowPay is the ultimate dashboard designed for groups, roommates, and travelers 
 - **🔄 Multi-Payer Entries**: Support for expenses funded by multiple people simultaneously, ensuring accurate balance tracking from the source.
 - **📊 Visual Analytics**: Understand where your money goes with beautiful, interactive charts and category breakdowns powered by Recharts.
 - **🧠 Smart Settlements**: Our advanced algorithm calculates the minimum number of transactions needed to settle all debts across a group.
+- **🧪 Simulation Mode**: A powerful sandbox environment to "try before you buy." Test new expenses and payments to see their impact on group balances before committing them to the permanent ledger.
 - **🤝 Group Management**: Create separate groups for different circles (Roommates, Trip to Bali, Family) and manage members effortlessly.
 - **📱 Responsive Design**: A premium, "Deep Space" themed UI that works perfectly on desktop and mobile devices.
 
@@ -109,6 +110,18 @@ npm run dev
 3. **Add Expenses**: Log new expenses, choosing who paid and how the cost is split.
 4. **View Analytics**: Check the Dashboard for a visual summary of spending.
 5. **Settle Up**: Use the Settlements page to see exactly how much is owed and by whom.
+
+---
+
+## 🧪 Simulation Mode
+
+FlowPay includes a unique **Simulation Mode** that allows you to experiment with group finances without making permanent changes.
+
+1. **Enter Simulation**: Click the "Enter Simulation Mode" button on the Settlements page.
+2. **Experiment**: Add hypothetical expenses or payments.
+3. **Compare**: Use the "Simulation Comparison" view to see the "Before" vs "After" impact on everyone's balances.
+4. **History**: Review your simulation steps with a full history log, including Undo/Redo capabilities.
+5. **Commit or Discard**: Once you're happy with the results, click **Apply** to save the changes to the group, or **Discard** to revert to the original state.
 
 ---
 
