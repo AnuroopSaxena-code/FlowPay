@@ -114,6 +114,11 @@ const SettlementList = () => {
   };
 
   const handleNotify = async (s) => {
+    // Only the person owed money (creditor) can send a nudge
+    if (currentMember?.id !== s.toMemberId) {
+      return toast({ title: 'Permission Denied', description: 'Only the person owed money can send a nudge.', variant: 'destructive' });
+    }
+
     const fromMember = members.find(m => m.id === s.fromMemberId);
     const toMember = members.find(m => m.id === s.toMemberId);
     
