@@ -12,6 +12,7 @@ import {
   writeBatch,
   serverTimestamp 
 } from "firebase/firestore";
+import { useAuth } from '@/contexts/AuthContext';
 import { useGroup } from '@/contexts/GroupContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -20,13 +21,16 @@ import { useToast } from '@/hooks/use-toast';
 import { Plus, Trash2, Edit2, Loader2, UserPlus } from 'lucide-react';
 
 const MemberSetup = () => {
-  const { currentGroupId, fetchGroupData } = useGroup();
+  const { currentUser } = useAuth();
+  const { currentGroupId, currentGroup, fetchGroups, fetchGroupData } = useGroup();
   const { toast } = useToast();
   
   const [members, setMembers] = useState([]);
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({ name: '', email: '' });
   const [editingId, setEditingId] = useState(null);
+
+  const isOwner = currentGroup?.owner === currentUser?.uid;
 
   useEffect(() => {
     if (currentGroupId) {
@@ -83,34 +87,52 @@ const MemberSetup = () => {
     setEditingId(member.id);
   };
 
-  const handleDelete = async (id, name) => {
-    if (!window.confirm(`Remove ${name} from the group? This might affect existing expenses.`)) return;
+  const handleDelete = async (memberDocId, memberName, memberUserId) => {
+    if (!window.confirm(`Remove ${memberName} from the group?`)) return;
 
     setLoading(true);
     try {
       const batch = writeBatch(db);
 
-      // 1. Delete expenses where member is payer
-      const qPaid = query(collection(db, "expenses"), where("payerId", "==", id));
+      // 1. Clean up financial records
+      const qPaid = query(collection(db, "expenses"), where("payerId", "==", memberDocId));
       const snapPaid = await getDocs(qPaid);
       snapPaid.docs.forEach(d => batch.delete(doc(db, "expenses", d.id)));
 
-      // 2. Delete settlements involving this member
-      const qSetFrom = query(collection(db, "settlements"), where("fromMemberId", "==", id));
-      const snapSetFrom = await getDocs(qSetFrom);
-      snapSetFrom.docs.forEach(d => batch.delete(doc(db, "settlements", d.id)));
+      const collectionsToClean = ['settlements'];
+      for (const col of collectionsToClean) {
+        const qFrom = query(collection(db, col), where("fromMemberId", "==", memberDocId));
+        const snapFrom = await getDocs(qFrom);
+        snapFrom.docs.forEach(d => batch.delete(doc(db, col, d.id)));
 
-      const qSetTo = query(collection(db, "settlements"), where("toMemberId", "==", id));
-      const snapSetTo = await getDocs(qSetTo);
-      snapSetTo.docs.forEach(d => batch.delete(doc(db, "settlements", d.id)));
+        const qTo = query(collection(db, col), where("toMemberId", "==", memberDocId));
+        const snapTo = await getDocs(qTo);
+        snapTo.docs.forEach(d => batch.delete(doc(db, col, d.id)));
+      }
+
+      // 2. Remove from group participants (THIS causes the group to disappear for THEM)
+      if (memberUserId) {
+        const groupRef = doc(db, "groups", currentGroupId);
+        const groupSnap = await getDocs(query(collection(db, "groups"), where("__name__", "==", currentGroupId)));
+        if (!groupSnap.empty) {
+          const participants = groupSnap.docs[0].data().participants || [];
+          batch.update(groupRef, {
+            participants: participants.filter(uid => uid !== memberUserId)
+          });
+        }
+      }
 
       // 3. Delete group member record
-      batch.delete(doc(db, "members", id));
+      batch.delete(doc(db, "members", memberDocId));
 
       await batch.commit();
-      toast({ title: 'Success', description: 'Member removed' });
+      toast({ title: 'Success', description: 'Member removed and access revoked' });
+      
       await fetchMembers();
       await fetchGroupData();
+      if (memberUserId === currentUser.uid) {
+         await fetchGroups(); // If I deleted myself (unlikely due to UI check, but safe)
+      }
     } catch (error) {
       toast({ title: 'Error', description: error.message, variant: 'destructive' });
     } finally {
@@ -125,54 +147,65 @@ const MemberSetup = () => {
       <CardHeader>
         <CardTitle className="flex items-center justify-between">
           <span>Group Members</span>
-          <span className="text-sm font-normal bg-muted px-2 py-1 rounded-full">{members.length} members</span>
+          <span className="text-sm font-normal bg-muted px-2 py-1 rounded-full">{members.length}</span>
         </CardTitle>
-        <CardDescription>Add people to split expenses with</CardDescription>
+        <CardDescription>
+          {isOwner ? "Manage member access and profiles" : "View people in this group"}
+        </CardDescription>
       </CardHeader>
       <CardContent>
-        <form onSubmit={handleSubmit} className="flex flex-col sm:flex-row gap-3 mb-6">
-          <Input 
-            placeholder="Name" 
-            value={formData.name} 
-            onChange={e => setFormData({...formData, name: e.target.value})} 
-            required 
-            className="flex-1"
-          />
-          <Input 
-            type="email"
-            placeholder="Email (optional)" 
-            value={formData.email} 
-            onChange={e => setFormData({...formData, email: e.target.value})} 
-            className="flex-1"
-          />
-          <Button type="submit" disabled={loading} className="bg-teal-600 hover:bg-teal-700 whitespace-nowrap">
-            {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : (editingId ? 'Update' : <><UserPlus className="w-4 h-4 mr-2" /> Add</>)}
-          </Button>
-          {editingId && (
-            <Button type="button" variant="ghost" onClick={() => { setEditingId(null); setFormData({name:'', email:''}); }}>
-              Cancel
+        {isOwner && (
+          <form onSubmit={handleSubmit} className="flex flex-col sm:flex-row gap-3 mb-6">
+            <Input 
+              placeholder="Name" 
+              value={formData.name} 
+              onChange={e => setFormData({...formData, name: e.target.value})} 
+              required 
+              className="flex-1"
+            />
+            <Input 
+              type="email"
+              placeholder="Email (optional)" 
+              value={formData.email} 
+              onChange={e => setFormData({...formData, email: e.target.value})} 
+              className="flex-1"
+            />
+            <Button type="submit" disabled={loading} className="bg-teal-600 hover:bg-teal-700 whitespace-nowrap">
+              {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : (editingId ? 'Update' : <><UserPlus className="w-4 h-4 mr-2" /> Add</>)}
             </Button>
-          )}
-        </form>
+            {editingId && (
+              <Button type="button" variant="ghost" onClick={() => { setEditingId(null); setFormData({name:'', email:''}); }}>
+                Cancel
+              </Button>
+            )}
+          </form>
+        )}
 
         <div className="space-y-2">
           {members.length === 0 ? (
-            <p className="text-center text-muted-foreground py-4 text-sm">No members yet. Add yourself and others!</p>
+            <p className="text-center text-muted-foreground py-4 text-sm">No members yet.</p>
           ) : (
             members.map(member => (
               <div key={member.id} className="flex items-center justify-between p-3 rounded-lg bg-muted/30 border hover:bg-muted/50 transition-colors">
-                <div>
-                  <p className="font-medium">{member.name}</p>
-                  {member.email && <p className="text-xs text-muted-foreground">{member.email}</p>}
+                <div className="flex flex-col">
+                  <span className="font-medium flex items-center gap-2">
+                    {member.name}
+                    {member.userId === currentGroup?.owner && (
+                      <span className="text-[10px] bg-teal-100 text-teal-700 dark:bg-teal-900/40 dark:text-teal-400 px-1.5 py-0.5 rounded border border-teal-200 dark:border-teal-800 uppercase tracking-tighter font-bold">Owner</span>
+                    )}
+                  </span>
+                  {member.email && <span className="text-xs text-muted-foreground">{member.email}</span>}
                 </div>
-                <div className="flex gap-1">
-                  <Button variant="ghost" size="icon" onClick={() => handleEdit(member)} className="h-8 w-8">
-                    <Edit2 className="w-4 h-4 text-muted-foreground" />
-                  </Button>
-                  <Button variant="ghost" size="icon" onClick={() => handleDelete(member.id, member.name)} className="h-8 w-8 text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30">
-                    <Trash2 className="w-4 h-4" />
-                  </Button>
-                </div>
+                {isOwner && member.userId !== currentUser.uid && (
+                  <div className="flex gap-1">
+                    <Button variant="ghost" size="icon" onClick={() => handleEdit(member)} className="h-8 w-8">
+                      <Edit2 className="w-4 h-4 text-muted-foreground" />
+                    </Button>
+                    <Button variant="ghost" size="icon" onClick={() => handleDelete(member.id, member.name, member.userId)} className="h-8 w-8 text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30">
+                      <Trash2 className="w-4 h-4" />
+                    </Button>
+                  </div>
+                )}
               </div>
             ))
           )}

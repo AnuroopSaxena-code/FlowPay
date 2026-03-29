@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -19,6 +19,9 @@ const SignupPage = () => {
   const { signup, loginWithGoogle } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
+  const location = useLocation();
+  const queryParams = new URLSearchParams(location.search);
+  const redirectTo = queryParams.get('redirectTo');
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.name || e.target.name]: e.value || e.target.value });
@@ -67,7 +70,7 @@ const SignupPage = () => {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <Button variant="outline" className="w-full mt-4" onClick={() => navigate('/login')}>
+            <Button variant="outline" className="w-full mt-4" onClick={() => navigate(redirectTo ? `/login?redirectTo=${redirectTo}` : '/login')}>
               Return to Sign In
             </Button>
           </CardContent>
@@ -147,7 +150,7 @@ const SignupPage = () => {
             onClick={async () => {
               try {
                 await loginWithGoogle();
-                navigate('/dashboard');
+                navigate(redirectTo || '/dashboard');
               } catch (e) {
                 toast({ title: 'Error', description: 'Google login failed.', variant: 'destructive' });
               }
@@ -176,7 +179,7 @@ const SignupPage = () => {
 
           <div className="mt-4 text-center text-sm">
             Already have an account?{' '}
-            <Link to="/login" className="text-teal-600 hover:underline font-medium">
+            <Link to={redirectTo ? `/login?redirectTo=${redirectTo}` : '/login'} className="text-teal-600 hover:underline font-medium">
               Sign in
             </Link>
           </div>

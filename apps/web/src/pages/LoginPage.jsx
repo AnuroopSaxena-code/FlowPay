@@ -15,8 +15,10 @@ const LoginPage = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { toast } = useToast();
+  const queryParams = new URLSearchParams(location.search);
+  const redirectTo = queryParams.get('redirectTo');
 
-  const from = location.state?.from?.pathname || '/dashboard';
+  const from = redirectTo || location.state?.from?.pathname || '/dashboard';
 
   const handleSubmit = async (e) => {
     e.preventDefault();
