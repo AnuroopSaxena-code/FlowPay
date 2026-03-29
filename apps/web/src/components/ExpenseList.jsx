@@ -194,7 +194,15 @@ const ExpenseList = ({ onEdit, refreshTrigger }) => {
                         {exp.category || 'Other'}
                       </span>
                     </TableCell>
-                    <TableCell>{members[exp.payerId] || 'Unknown'}</TableCell>
+                    <TableCell>
+                      {exp.payers && exp.payers.length > 1 ? (
+                        <span className="text-teal-600 dark:text-teal-400 font-medium">
+                          {members[exp.payers[0].memberId] || 'Someone'} & {exp.payers.length - 1} {exp.payers.length === 2 ? 'other' : 'others'}
+                        </span>
+                      ) : (
+                        members[exp.payerId] || 'Unknown'
+                      )}
+                    </TableCell>
                     <TableCell className="text-right font-bold">₹{exp.amount.toFixed(2)}</TableCell>
                     <TableCell className="text-right">
                       <div className="flex justify-end gap-1">

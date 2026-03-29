@@ -41,6 +41,8 @@ const ExpenseForm = ({ expenseToEdit, onSuccess, onCancel }) => {
   
   const [splits, setSplits] = useState({}); // { memberId: percentage }
   const [splitMode, setSplitMode] = useState('equal'); // 'equal' or 'custom'
+  const [payers, setPayers] = useState({}); // { memberId: amount }
+  const [isMultiPayer, setIsMultiPayer] = useState(false);
 
   useEffect(() => {
     if (currentGroupId) fetchMembers();
@@ -69,6 +71,16 @@ const ExpenseForm = ({ expenseToEdit, onSuccess, onCancel }) => {
         
         setSplits(newSplits);
         setSplitMode(isEqual && expenseToEdit.participants.length === members.length ? 'equal' : 'custom');
+      }
+
+      if (expenseToEdit.payers && Array.isArray(expenseToEdit.payers)) {
+        const newPayers = {};
+        expenseToEdit.payers.forEach(p => newPayers[p.memberId] = p.amount);
+        setPayers(newPayers);
+        setIsMultiPayer(expenseToEdit.payers.length > 1);
+      } else {
+        setPayers({ [expenseToEdit.payerId]: expenseToEdit.amount });
+        setIsMultiPayer(false);
       }
     }
   }, [expenseToEdit, members]);
@@ -116,6 +128,15 @@ const ExpenseForm = ({ expenseToEdit, onSuccess, onCancel }) => {
     setSplitMode('custom');
   };
 
+  const handlePayerAmountChange = (memberId, value) => {
+    const numValue = parseFloat(value) || 0;
+    setPayers(prev => ({ ...prev, [memberId]: numValue }));
+    if (!isMultiPayer) setIsMultiPayer(true);
+  };
+
+  const totalPaid = Object.values(payers).reduce((sum, val) => sum + (parseFloat(val) || 0), 0);
+  const isPaidSumValid = Math.abs(totalPaid - (parseFloat(formData.amount) || 0)) < 0.1;
+
   const totalPercentage = Object.values(splits).reduce((sum, val) => sum + (parseFloat(val) || 0), 0);
   const isPercentageValid = Math.abs(totalPercentage - 100) < 0.1;
   const currentTotalAmount = (parseFloat(formData.amount) || 0) * (totalPercentage / 100);
@@ -126,6 +147,10 @@ const ExpenseForm = ({ expenseToEdit, onSuccess, onCancel }) => {
     
     if (!isPercentageValid) {
       return toast({ title: 'Invalid Splits', description: `Percentages must sum to 100%. Current sum: ${totalPercentage.toFixed(1)}%`, variant: 'destructive' });
+    }
+
+    if (isMultiPayer && !isPaidSumValid) {
+      return toast({ title: 'Invalid Payer Amounts', description: `Total amount paid (₹${totalPaid.toFixed(2)}) must equal the expense total (₹${parseFloat(formData.amount).toFixed(2)})`, variant: 'destructive' });
     }
 
     setLoading(true);
@@ -139,10 +164,18 @@ const ExpenseForm = ({ expenseToEdit, onSuccess, onCancel }) => {
         amount: parseFloat(formData.amount),
         groupId: currentGroupId,
         participants,
-        creatorId: currentUser?.uid,
-        creatorName: currentUser?.displayName || currentUser?.email,
         updated: serverTimestamp()
       };
+
+      if (isMultiPayer) {
+        data.payers = Object.entries(payers)
+          .filter(([_, amt]) => amt > 0)
+          .map(([memberId, amount]) => ({ memberId, amount: parseFloat(amount) }));
+        // Still keep first payer for legacy display/compatibility
+        data.payerId = data.payers[0]?.memberId || '';
+      } else {
+        data.payers = [{ memberId: formData.payerId, amount: parseFloat(formData.amount) }];
+      }
 
       if (expenseToEdit) {
         await updateDoc(doc(db, "expenses", expenseToEdit.id), data);
@@ -187,15 +220,6 @@ const ExpenseForm = ({ expenseToEdit, onSuccess, onCancel }) => {
               <Input required type="number" step="0.01" min="0.01" value={formData.amount} onChange={e => setFormData({...formData, amount: e.target.value})} placeholder="0.00" />
             </div>
             <div className="space-y-2">
-              <label className="text-sm font-medium">Who Paid?</label>
-              <Select value={formData.payerId} onValueChange={v => setFormData({...formData, payerId: v})} required>
-                <SelectTrigger><SelectValue placeholder="Select payer" /></SelectTrigger>
-                <SelectContent>
-                  {members.map(m => <SelectItem key={m.id} value={m.id}>{m.name}</SelectItem>)}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-2">
               <label className="text-sm font-medium">Category</label>
               <Select value={formData.category} onValueChange={v => setFormData({...formData, category: v})}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
@@ -208,6 +232,60 @@ const ExpenseForm = ({ expenseToEdit, onSuccess, onCancel }) => {
               <label className="text-sm font-medium">Date</label>
               <Input type="date" value={formData.date} onChange={e => setFormData({...formData, date: e.target.value})} />
             </div>
+          </div>
+
+          <div className="space-y-3 border border-slate-200 dark:border-slate-800 rounded-lg p-4 bg-teal-50/10 dark:bg-teal-950/5">
+            <div className="flex items-center justify-between mb-3 border-b border-slate-200 dark:border-slate-800 pb-3">
+              <label className="text-sm font-medium flex items-center gap-2">
+                <Plus className="w-4 h-4" /> Who Paid?
+              </label>
+              <Button 
+                type="button" variant="outline" size="sm" 
+                onClick={() => {
+                  setIsMultiPayer(!isMultiPayer);
+                  if (!isMultiPayer && formData.payerId) {
+                    setPayers({ [formData.payerId]: parseFloat(formData.amount) || 0 });
+                  }
+                }}
+                className={isMultiPayer ? 'bg-teal-50 text-teal-700 border-teal-200 dark:bg-teal-900/30' : ''}
+              >
+                {isMultiPayer ? 'Back to Single Payer' : 'Split Payer'}
+              </Button>
+            </div>
+
+            {!isMultiPayer ? (
+              <Select value={formData.payerId} onValueChange={v => {
+                setFormData({...formData, payerId: v});
+                setPayers({ [v]: parseFloat(formData.amount) || 0 });
+              }} required>
+                <SelectTrigger><SelectValue placeholder="Select one person who paid" /></SelectTrigger>
+                <SelectContent>
+                  {members.map(m => <SelectItem key={m.id} value={m.id}>{m.name}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            ) : (
+              <div className="space-y-2 max-h-40 overflow-y-auto pr-2">
+                {members.map(m => (
+                  <div key={m.id} className="flex items-center gap-3 py-1">
+                    <span className="flex-1 text-sm">{m.name}</span>
+                    <div className="flex items-center gap-2 w-32">
+                      <span className="text-sm text-muted-foreground">₹</span>
+                      <Input 
+                        type="number" step="any" min="0" 
+                        value={payers[m.id] || ''} 
+                        onChange={e => handlePayerAmountChange(m.id, e.target.value)}
+                        className="h-8 text-right"
+                        placeholder="0.00"
+                      />
+                    </div>
+                  </div>
+                ))}
+                <div className={`flex justify-between items-center text-xs pt-2 border-t mt-2 ${isPaidSumValid ? 'text-emerald-600' : 'text-rose-600'}`}>
+                  <span>Total Paid:</span>
+                  <span className="font-bold">₹{totalPaid.toFixed(2)} / ₹{parseFloat(formData.amount) || 0}</span>
+                </div>
+              </div>
+            )}
           </div>
 
           <div className="space-y-3 border border-slate-200 dark:border-slate-800 rounded-lg p-4 bg-slate-50/50 dark:bg-slate-900/50">

@@ -125,9 +125,20 @@ export const GroupProvider = ({ children }) => {
 
     exps.forEach(exp => {
       const amount = parseFloat(exp.amount);
-      if (balances[exp.payerId]) {
+      
+      // Handle Multiple Payers (New Format)
+      if (exp.payers && Array.isArray(exp.payers)) {
+        exp.payers.forEach(p => {
+          if (balances[p.memberId]) {
+            balances[p.memberId].balance += (parseFloat(p.amount) || 0);
+          }
+        });
+      } 
+      // Handle Single Payer (Legacy Format)
+      else if (balances[exp.payerId]) {
         balances[exp.payerId].balance += amount;
       }
+
       if (exp.participants && Array.isArray(exp.participants)) {
         exp.participants.forEach(p => {
           if (balances[p.memberId]) {
