@@ -40,7 +40,7 @@ const SignupPage = () => {
       setIsSent(true);
       toast({ title: 'Success', description: 'Account created! Please check your email.' });
     } catch (error) {
-      const errorMessage = error.response?.message || error.data?.message || 'Failed to create account.';
+      const errorMessage = error.message || 'Failed to create account.';
       toast({
         title: 'Error',
         description: errorMessage,
