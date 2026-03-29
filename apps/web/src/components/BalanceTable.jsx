@@ -11,6 +11,7 @@ import { Button } from '@/components/ui/button';
 const BalanceTable = () => {
   const { currentGroupId, members, expenses, settlements, calculateBalances, calculateOptimalSettlements, loading } = useGroup();
   const { currentUser } = useAuth();
+  const { toast } = useToast();
   const [isSending, setIsSending] = useState(null);
 
   const currentMember = useMemo(() => 
@@ -32,6 +33,7 @@ const BalanceTable = () => {
         {
           to_name: fromMember.name,
           from_name: toMember?.name || currentMember?.name,
+          to_email: fromMember.email,
           from_email: currentUser?.email,
           amount: s.amount.toFixed(2),
           link: window.location.origin + '/settlements',

@@ -117,6 +117,7 @@ const SettlementList = () => {
         {
           to_name: fromMember.name,
           from_name: toMember?.name || currentMember?.name,
+          to_email: fromMember.email,
           from_email: currentUser?.email,
           amount: s.amount.toFixed(2),
           link: window.location.href,
