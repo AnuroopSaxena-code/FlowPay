@@ -1,5 +1,17 @@
 import React, { useState, useEffect } from 'react';
-import pb from '@/lib/pocketbaseClient';
+import { db } from '@/lib/firebaseClient';
+import { 
+  collection, 
+  addDoc, 
+  updateDoc, 
+  deleteDoc, 
+  doc, 
+  getDocs, 
+  query, 
+  where, 
+  writeBatch,
+  serverTimestamp 
+} from "firebase/firestore";
 import { useGroup } from '@/contexts/GroupContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -26,11 +38,9 @@ const MemberSetup = () => {
 
   const fetchMembers = async () => {
     try {
-      const records = await pb.collection('members').getFullList({
-        filter: `groupId = "${currentGroupId}"`,
-        sort: 'created',
-        $autoCancel: false
-      });
+      const q = query(collection(db, "members"), where("groupId", "==", currentGroupId));
+      const querySnapshot = await getDocs(q);
+      const records = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
       setMembers(records);
     } catch (error) {
       console.error('Error fetching members:', error);
@@ -44,19 +54,23 @@ const MemberSetup = () => {
     setLoading(true);
     try {
       if (editingId) {
-        await pb.collection('members').update(editingId, formData, { $autoCancel: false });
+        await updateDoc(doc(db, "members", editingId), { 
+          ...formData,
+          updated: serverTimestamp() 
+        });
         toast({ title: 'Success', description: 'Member updated' });
       } else {
-        await pb.collection('members').create({
+        await addDoc(collection(db, "members"), {
           ...formData,
-          groupId: currentGroupId
-        }, { $autoCancel: false });
+          groupId: currentGroupId,
+          created: serverTimestamp()
+        });
         toast({ title: 'Success', description: 'Member added' });
       }
       setFormData({ name: '', email: '' });
       setEditingId(null);
       await fetchMembers();
-      await fetchGroupData(); // Sync global balances immediately
+      await fetchGroupData();
     } catch (error) {
       toast({ title: 'Error', description: error.message, variant: 'destructive' });
     } finally {
@@ -72,37 +86,35 @@ const MemberSetup = () => {
   const handleDelete = async (id, name) => {
     if (!window.confirm(`Remove ${name} from the group? This might affect existing expenses.`)) return;
 
+    setLoading(true);
     try {
-      const paidExpenses = await pb.collection('expenses').getFullList({ filter: `payerId = "${id}"`, $autoCancel: false });
-      const deletedExpenseIds = new Set();
-      for (const exp of paidExpenses) {
-        await pb.collection('expenses').delete(exp.id, { $autoCancel: false });
-        deletedExpenseIds.add(exp.id);
-      }
+      const batch = writeBatch(db);
 
-      const settlements = await pb.collection('settlements').getFullList({ filter: `fromMemberId = "${id}" || toMemberId = "${id}"`, $autoCancel: false });
-      for (const st of settlements) {
-        await pb.collection('settlements').delete(st.id, { $autoCancel: false });
-      }
+      // 1. Delete expenses where member is payer
+      const qPaid = query(collection(db, "expenses"), where("payerId", "==", id));
+      const snapPaid = await getDocs(qPaid);
+      snapPaid.docs.forEach(d => batch.delete(doc(db, "expenses", d.id)));
 
-      const allExpenses = await pb.collection('expenses').getFullList({ filter: `groupId = "${currentGroupId}"`, $autoCancel: false });
-      for (const exp of allExpenses) {
-        if (deletedExpenseIds.has(exp.id)) continue;
-        
-        try {
-          const participants = typeof exp.participants === 'string' ? JSON.parse(exp.participants) : exp.participants;
-          if (Array.isArray(participants) && participants.some(p => p.memberId === id)) {
-            await pb.collection('expenses').delete(exp.id, { $autoCancel: false });
-          }
-        } catch(e) {}
-      }
+      // 2. Delete settlements involving this member
+      const qSetFrom = query(collection(db, "settlements"), where("fromMemberId", "==", id));
+      const snapSetFrom = await getDocs(qSetFrom);
+      snapSetFrom.docs.forEach(d => batch.delete(doc(db, "settlements", d.id)));
 
-      await pb.collection('members').delete(id, { $autoCancel: false });
+      const qSetTo = query(collection(db, "settlements"), where("toMemberId", "==", id));
+      const snapSetTo = await getDocs(qSetTo);
+      snapSetTo.docs.forEach(d => batch.delete(doc(db, "settlements", d.id)));
+
+      // 3. Delete group member record
+      batch.delete(doc(db, "members", id));
+
+      await batch.commit();
       toast({ title: 'Success', description: 'Member removed' });
       await fetchMembers();
-      await fetchGroupData(); // Sync global balances immediately
+      await fetchGroupData();
     } catch (error) {
       toast({ title: 'Error', description: error.message, variant: 'destructive' });
+    } finally {
+      setLoading(false);
     }
   };
 

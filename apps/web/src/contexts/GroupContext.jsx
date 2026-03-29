@@ -1,5 +1,18 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import pb from '@/lib/pocketbaseClient';
+import { db } from '@/lib/firebaseClient';
+import { 
+  collection, 
+  query, 
+  where, 
+  getDocs, 
+  addDoc, 
+  updateDoc, 
+  deleteDoc, 
+  doc, 
+  orderBy,
+  writeBatch,
+  serverTimestamp
+} from "firebase/firestore";
 import { useAuth } from './AuthContext';
 import { useToast } from '@/hooks/use-toast';
 
@@ -48,14 +61,19 @@ export const GroupProvider = ({ children }) => {
     if (!currentUser) return;
     try {
       setLoading(true);
-      // Filter groups where the current user is either the owner OR a participant
-      const filter = `owner = "${currentUser.id}" || participants ~ "${currentUser.id}"`;
+      // Firebase UID is used here instead of PocketBase ID
+      const q = query(
+        collection(db, "groups"), 
+        where("participants", "array-contains", currentUser.uid),
+        orderBy("created", "desc")
+      );
       
-      const records = await pb.collection('groups').getFullList({
-        filter: filter,
-        sort: '-created',
-        $autoCancel: false
-      });
+      const querySnapshot = await getDocs(q);
+      const records = querySnapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      }));
+      
       setGroups(records);
       
       if (records.length > 0 && (!currentGroupId || !records.find(g => g.id === currentGroupId))) {
@@ -73,15 +91,21 @@ export const GroupProvider = ({ children }) => {
   };
 
   const fetchGroupData = async () => {
+    if (!currentGroupId) return;
     try {
-      const [m, e, s] = await Promise.all([
-        pb.collection('members').getFullList({ filter: `groupId = "${currentGroupId}"`, $autoCancel: false }),
-        pb.collection('expenses').getFullList({ filter: `groupId = "${currentGroupId}"`, $autoCancel: false }),
-        pb.collection('settlements').getFullList({ filter: `groupId = "${currentGroupId}"`, $autoCancel: false })
+      const qMembers = query(collection(db, "members"), where("groupId", "==", currentGroupId));
+      const qExpenses = query(collection(db, "expenses"), where("groupId", "==", currentGroupId), orderBy("date", "desc"));
+      const qSettlements = query(collection(db, "settlements"), where("groupId", "==", currentGroupId));
+
+      const [snapMembers, snapExpenses, snapSettlements] = await Promise.all([
+        getDocs(qMembers),
+        getDocs(qExpenses),
+        getDocs(qSettlements)
       ]);
-      setMembers(m);
-      setExpenses(e);
-      setSettlements(s);
+
+      setMembers(snapMembers.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+      setExpenses(snapExpenses.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+      setSettlements(snapSettlements.docs.map(doc => ({ id: doc.id, ...doc.data() })));
     } catch (error) {
       console.error('Error fetching group data:', error);
     }
@@ -134,7 +158,6 @@ export const GroupProvider = ({ children }) => {
     const plan = [];
     let i = 0, j = 0;
     
-    // Deep copy to avoid mutating original array during calculation
     const dCopy = debtors.map(d => ({...d}));
     const cCopy = creditors.map(c => ({...c}));
 
@@ -204,7 +227,6 @@ export const GroupProvider = ({ children }) => {
 
   const jumpToHistory = (historyItem) => {
     setSimulationState(historyItem.state);
-    // Truncate history after this point
     const index = simulationHistory.findIndex(h => h.id === historyItem.id);
     setSimulationHistory(simulationHistory.slice(0, index + 1));
   };
@@ -214,18 +236,24 @@ export const GroupProvider = ({ children }) => {
       const newExpenses = simulationState.expenses.filter(e => e.isSimulated);
       const newSettlements = simulationState.settlements.filter(s => s.isSimulated);
 
+      const batch = writeBatch(db);
+
       for (const exp of newExpenses) {
         const { id, isSimulated, ...dataToSave } = exp;
-        await pb.collection('expenses').create(dataToSave, { $autoCancel: false });
+        const newDocRef = doc(collection(db, "expenses"));
+        batch.set(newDocRef, { ...dataToSave, created: serverTimestamp() });
       }
 
       for (const set of newSettlements) {
         const { id, isSimulated, ...dataToSave } = set;
-        await pb.collection('settlements').create(dataToSave, { $autoCancel: false });
+        const newDocRef = doc(collection(db, "settlements"));
+        batch.set(newDocRef, { ...dataToSave, created: serverTimestamp() });
       }
 
+      await batch.commit();
+
       toast({ title: 'Simulation Applied', description: 'Changes have been saved successfully.', className: 'bg-emerald-600 text-white border-none' });
-      await fetchGroupData(); // Refresh actual data
+      await fetchGroupData();
       exitSimulationMode();
     } catch (error) {
       toast({ title: 'Error applying simulation', description: error.message, variant: 'destructive' });

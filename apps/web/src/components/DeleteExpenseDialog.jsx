@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useMemo } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -12,7 +12,8 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useGroup } from '@/contexts/GroupContext';
 import { Trash2, AlertCircle, RefreshCw } from 'lucide-react';
-import pb from '@/lib/pocketbaseClient';
+import { db } from '@/lib/firebaseClient';
+import { doc, deleteDoc } from "firebase/firestore";
 import { useToast } from '@/hooks/use-toast';
 
 const DeleteExpenseDialog = ({ open, onOpenChange, expense, onDeleteSuccess }) => {
@@ -25,7 +26,6 @@ const DeleteExpenseDialog = ({ open, onOpenChange, expense, onDeleteSuccess }) =
   const relatedSettlements = useMemo(() => {
     if (!expense || !settlements.length) return [];
 
-    // Calculate shares for each participant to look for matching settlement amounts
     const amount = parseFloat(expense.amount);
     const shares = (expense.participants || []).map(p => ({
       memberId: p.memberId,
@@ -33,16 +33,13 @@ const DeleteExpenseDialog = ({ open, onOpenChange, expense, onDeleteSuccess }) =
     }));
 
     return settlements.filter(s => {
-      // Must be a completed settlement in the same group
       if (s.status !== 'completed') return false;
       
-      // Must be from a participant to the payer
       const share = shares.find(sh => sh.memberId === s.fromMemberId);
       const isToPayer = s.toMemberId === expense.payerId;
       
       if (!share || !isToPayer) return false;
 
-      // Check if amount matches or is very close (to handle rounding)
       const amountDiff = Math.abs(parseFloat(s.amount) - share.amount);
       return amountDiff < 0.05;
     });
@@ -54,12 +51,12 @@ const DeleteExpenseDialog = ({ open, onOpenChange, expense, onDeleteSuccess }) =
       // 1. Delete associated settlements if selected
       if (deleteRelated && relatedSettlements.length > 0) {
         for (const s of relatedSettlements) {
-          await pb.collection('settlements').delete(s.id, { $autoCancel: false });
+          await deleteDoc(doc(db, "settlements", s.id));
         }
       }
 
       // 2. Delete the expense
-      await pb.collection('expenses').delete(expense.id, { $autoCancel: false });
+      await deleteDoc(doc(db, "expenses", expense.id));
 
       toast({ 
         title: 'Success', 
@@ -126,7 +123,7 @@ const DeleteExpenseDialog = ({ open, onOpenChange, expense, onDeleteSuccess }) =
                 {relatedSettlements.map(s => (
                   <div key={s.id} className="text-[11px] flex justify-between text-amber-700 dark:text-amber-400">
                     <span>{members.find(m => m.id === s.fromMemberId)?.name} paid ₹{parseFloat(s.amount).toFixed(2)}</span>
-                    <span className="opacity-70">{new Date(s.created).toLocaleDateString()}</span>
+                    <span className="opacity-70">{s.created ? new Date(s.created.seconds * 1000).toLocaleDateString() : '-'}</span>
                   </div>
                 ))}
               </div>

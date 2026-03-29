@@ -1,5 +1,17 @@
 import React, { useState } from 'react';
-import pb from '@/lib/pocketbaseClient';
+import { db } from '@/lib/firebaseClient';
+import { 
+  collection, 
+  addDoc, 
+  updateDoc, 
+  deleteDoc, 
+  doc, 
+  getDocs, 
+  query, 
+  where, 
+  writeBatch,
+  serverTimestamp 
+} from "firebase/firestore";
 import { useAuth } from '@/contexts/AuthContext';
 import { useGroup } from '@/contexts/GroupContext';
 import { Button } from '@/components/ui/button';
@@ -7,7 +19,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
-import { Plus, Trash2, Loader2, Share2, CheckCircle2 } from 'lucide-react';
+import { Plus, Trash2, Loader2, Share2 } from 'lucide-react';
 
 const GroupManagement = () => {
   const { currentUser } = useAuth();
@@ -26,13 +38,14 @@ const GroupManagement = () => {
     
     setLoading(true);
     try {
-      await pb.collection('groups').create({
+      await addDoc(collection(db, "groups"), {
         name: formData.name,
         description: formData.description,
-        owner: currentUser.id,
-        participants: [currentUser.id],
-        inviteCode: inviteCode
-      }, { $autoCancel: false });
+        owner: currentUser.uid,
+        participants: [currentUser.uid],
+        inviteCode: inviteCode,
+        created: serverTimestamp()
+      });
       
       toast({ title: 'Success', description: 'Group created successfully' });
       setFormData({ name: '', description: '' });
@@ -48,21 +61,32 @@ const GroupManagement = () => {
   const handleDelete = async (id, name) => {
     if (!window.confirm(`Are you sure you want to delete the group "${name}"? All associated members and expenses will be lost.`)) return;
 
+    setLoading(true);
     try {
-      const expenses = await pb.collection('expenses').getFullList({ filter: `groupId = "${id}"`, $autoCancel: false });
-      for (const exp of expenses) await pb.collection('expenses').delete(exp.id, { $autoCancel: false });
-      
-      const settlements = await pb.collection('settlements').getFullList({ filter: `groupId = "${id}"`, $autoCancel: false });
-      for (const st of settlements) await pb.collection('settlements').delete(st.id, { $autoCancel: false });
-      
-      const members = await pb.collection('members').getFullList({ filter: `groupId = "${id}"`, $autoCancel: false });
-      for (const m of members) await pb.collection('members').delete(m.id, { $autoCancel: false });
+      const batch = writeBatch(db);
 
-      await pb.collection('groups').delete(id, { $autoCancel: false });
-      toast({ title: 'Success', description: 'Group deleted' });
+      // 1. Find and mark all associated documents for deletion
+      const collectionsToClean = ['expenses', 'settlements', 'members'];
+      
+      for (const colName of collectionsToClean) {
+        const q = query(collection(db, colName), where("groupId", "==", id));
+        const snapshot = await getDocs(q);
+        snapshot.docs.forEach((d) => {
+          batch.delete(doc(db, colName, d.id));
+        });
+      }
+
+      // 2. Delete the group itself
+      batch.delete(doc(db, "groups", id));
+
+      await batch.commit();
+      
+      toast({ title: 'Success', description: 'Group and all data deleted' });
       await fetchGroups();
     } catch (error) {
       toast({ title: 'Error', description: error.message, variant: 'destructive' });
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -123,11 +147,10 @@ const GroupManagement = () => {
                     onClick={async () => {
                       let inviteCode = group.inviteCode;
                       
-                      // Fallback: Generate code if missing (only for older records)
                       if (!inviteCode) {
                         inviteCode = Math.random().toString(36).substring(2, 8).toUpperCase();
                         try {
-                          await pb.collection('groups').update(group.id, { inviteCode }, { $autoCancel: false });
+                          await updateDoc(doc(db, "groups", group.id), { inviteCode });
                           toast({ title: 'Safety Check', description: 'Generated a new invite code for this group.' });
                         } catch (e) {
                           console.error('Failed to generate fallback code:', e);
@@ -150,7 +173,13 @@ const GroupManagement = () => {
                   {currentGroupId === group.id && (
                     <span className="text-xs font-medium text-teal-600 dark:text-teal-400 bg-teal-100 dark:bg-teal-900/50 px-2 py-1 rounded-full mr-2">Active</span>
                   )}
-                  <Button variant="ghost" size="icon" className="text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30" onClick={() => handleDelete(group.id, group.name)}>
+                  <Button 
+                    variant="ghost" 
+                    size="icon" 
+                    className="text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30" 
+                    onClick={() => handleDelete(group.id, group.name)}
+                    disabled={loading}
+                  >
                     <Trash2 className="w-4 h-4" />
                   </Button>
                 </div>

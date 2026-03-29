@@ -1,5 +1,13 @@
 import React, { useState, useMemo } from 'react';
-import pb from '@/lib/pocketbaseClient';
+import { db } from '@/lib/firebaseClient';
+import { 
+  collection, 
+  addDoc, 
+  updateDoc, 
+  deleteDoc, 
+  doc, 
+  serverTimestamp 
+} from "firebase/firestore";
 import { useAuth } from '@/contexts/AuthContext';
 import { useGroup } from '@/contexts/GroupContext';
 import { Button } from '@/components/ui/button';
@@ -51,16 +59,16 @@ const SettlementList = () => {
 
   const handleStatusToggle = async (settlement) => {
     const newStatus = settlement.status === 'completed' ? 'pending' : 'completed';
-    const completedDate = newStatus === 'completed' ? new Date().toISOString() : null;
     
     try {
-      await pb.collection('settlements').update(settlement.id, {
+      await updateDoc(doc(db, "settlements", settlement.id), {
         status: newStatus,
-        completedDate
-      }, { $autoCancel: false });
+        completedDate: newStatus === 'completed' ? new Date().toISOString() : null,
+        updated: serverTimestamp()
+      });
       
       toast({ title: 'Success', description: `Marked as ${newStatus}` });
-      await fetchGroupData(); // Sync global balances immediately
+      await fetchGroupData();
     } catch (error) {
       toast({ title: 'Error', description: error.message, variant: 'destructive' });
     }
@@ -68,7 +76,7 @@ const SettlementList = () => {
 
   const handleSettleSuggestion = async (suggestion) => {
     try {
-      await pb.collection('settlements').create({
+      await addDoc(collection(db, "settlements"), {
         groupId: currentGroupId,
         fromMemberId: suggestion.fromMemberId,
         toMemberId: suggestion.toMemberId,
@@ -76,12 +84,13 @@ const SettlementList = () => {
         status: 'completed',
         completedDate: new Date().toISOString(),
         date: new Date().toISOString().split('T')[0],
-        creatorId: currentUser?.id,
-        creatorName: currentUser?.name || currentUser?.email
-      }, { $autoCancel: false });
+        creatorId: currentUser?.uid,
+        creatorName: currentUser?.displayName || currentUser?.email,
+        created: serverTimestamp()
+      });
       
       toast({ title: 'Success', description: 'Debt recorded and settled!' });
-      await fetchGroupData(); // Sync global balances immediately
+      await fetchGroupData();
     } catch (error) {
       toast({ title: 'Error', description: error.message, variant: 'destructive' });
     }
@@ -90,9 +99,9 @@ const SettlementList = () => {
   const handleDelete = async (id) => {
     if (!window.confirm('Delete this settlement record?')) return;
     try {
-      await pb.collection('settlements').delete(id, { $autoCancel: false });
+      await deleteDoc(doc(db, "settlements", id));
       toast({ title: 'Success', description: 'Record deleted' });
-      await fetchGroupData(); // Sync global balances immediately
+      await fetchGroupData();
     } catch (error) {
       toast({ title: 'Error', description: error.message, variant: 'destructive' });
     }
@@ -105,22 +114,23 @@ const SettlementList = () => {
     }
     
     try {
-      await pb.collection('settlements').create({
+      await addDoc(collection(db, "settlements"), {
         groupId: currentGroupId,
         fromMemberId: formData.fromMemberId,
         toMemberId: formData.toMemberId,
         amount: parseFloat(formData.amount),
-        date: formData.date ? `${formData.date} 12:00:00.000Z` : null,
+        date: formData.date || new Date().toISOString().split('T')[0],
         status: 'completed',
         completedDate: new Date().toISOString(),
-        creatorId: currentUser?.id,
-        creatorName: currentUser?.name || currentUser?.email
-      }, { $autoCancel: false });
+        creatorId: currentUser?.uid,
+        creatorName: currentUser?.displayName || currentUser?.email,
+        created: serverTimestamp()
+      });
       
       toast({ title: 'Success', description: 'Settlement recorded' });
       setShowForm(false);
       setFormData({ fromMemberId: '', toMemberId: '', amount: '', date: new Date().toISOString().split('T')[0] });
-      await fetchGroupData(); // Sync global balances immediately
+      await fetchGroupData();
     } catch (error) {
       toast({ title: 'Error', description: error.message, variant: 'destructive' });
     }

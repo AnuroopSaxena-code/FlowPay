@@ -1,5 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import pb from '@/lib/pocketbaseClient';
+import { db } from '@/lib/firebaseClient';
+import { 
+  collection, 
+  query, 
+  where, 
+  getDocs, 
+  orderBy 
+} from "firebase/firestore";
 import { useGroup } from '@/contexts/GroupContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -22,7 +29,6 @@ const CATEGORY_COLORS = {
 
 const ExpenseList = ({ onEdit, refreshTrigger }) => {
   const { currentGroupId, fetchGroupData } = useGroup();
-  const { toast } = useToast();
   
   const [expenses, setExpenses] = useState([]);
   const [members, setMembers] = useState({});
@@ -31,7 +37,7 @@ const ExpenseList = ({ onEdit, refreshTrigger }) => {
   // Filters
   const [searchTerm, setSearchTerm] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('all');
-  const [sortOrder, setSortOrder] = useState('-date');
+  const [sortOrder, setSortOrder] = useState('date_desc'); // Firestore friendly sort key
 
   // Delete dialog state
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
@@ -41,26 +47,37 @@ const ExpenseList = ({ onEdit, refreshTrigger }) => {
     if (currentGroupId) {
       fetchData();
     }
-  }, [currentGroupId, refreshTrigger]);
+  }, [currentGroupId, refreshTrigger, sortOrder]);
 
   const fetchData = async () => {
     setLoading(true);
     try {
-      // Fetch members for mapping IDs to names
-      const membersData = await pb.collection('members').getFullList({
-        filter: `groupId = "${currentGroupId}"`,
-        $autoCancel: false
-      });
+      // 1. Fetch members mapping
+      const qMembers = query(collection(db, "members"), where("groupId", "==", currentGroupId));
+      const snapMembers = await getDocs(qMembers);
       const memberMap = {};
-      membersData.forEach(m => memberMap[m.id] = m.name);
+      snapMembers.docs.forEach(doc => memberMap[doc.id] = doc.data().name);
       setMembers(memberMap);
 
-      // Fetch expenses
-      const records = await pb.collection('expenses').getFullList({
-        filter: `groupId = "${currentGroupId}"`,
-        sort: sortOrder,
-        $autoCancel: false
-      });
+      // 2. Determine Firestore sorting
+      let field = "date";
+      let direction = "desc";
+      
+      if (sortOrder === "date_asc") direction = "asc";
+      if (sortOrder === "amount_desc") { field = "amount"; direction = "desc"; }
+      if (sortOrder === "amount_asc") { field = "amount"; direction = "asc"; }
+
+      const qExpenses = query(
+        collection(db, "expenses"),
+        where("groupId", "==", currentGroupId),
+        orderBy(field, direction)
+      );
+      
+      const snapExpenses = await getDocs(qExpenses);
+      const records = snapExpenses.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      }));
       setExpenses(records);
     } catch (error) {
       console.error('Error fetching expenses:', error);
@@ -68,11 +85,6 @@ const ExpenseList = ({ onEdit, refreshTrigger }) => {
       setLoading(false);
     }
   };
-
-  // Re-fetch when sort changes
-  useEffect(() => {
-    if (currentGroupId && !loading) fetchData();
-  }, [sortOrder]);
 
   const handleDeleteClick = (expense) => {
     setExpenseToDelete(expense);
@@ -87,6 +99,11 @@ const ExpenseList = ({ onEdit, refreshTrigger }) => {
   });
 
   if (!currentGroupId) return null;
+
+  const handleRefresh = async () => {
+    await fetchData();
+    await fetchGroupData();
+  };
 
   return (
     <Card>
@@ -118,10 +135,10 @@ const ExpenseList = ({ onEdit, refreshTrigger }) => {
                 <SelectValue placeholder="Sort by" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="-date">Newest First</SelectItem>
-                <SelectItem value="date">Oldest First</SelectItem>
-                <SelectItem value="-amount">Highest Amount</SelectItem>
-                <SelectItem value="amount">Lowest Amount</SelectItem>
+                <SelectItem value="date_desc">Newest First</SelectItem>
+                <SelectItem value="date_asc">Oldest First</SelectItem>
+                <SelectItem value="amount_desc">Highest Amount</SelectItem>
+                <SelectItem value="amount_asc">Lowest Amount</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -186,7 +203,7 @@ const ExpenseList = ({ onEdit, refreshTrigger }) => {
           open={isDeleteDialogOpen} 
           onOpenChange={setIsDeleteDialogOpen} 
           expense={expenseToDelete} 
-          onDeleteSuccess={fetchData} 
+          onDeleteSuccess={handleRefresh} 
         />
       </CardContent>
     </Card>

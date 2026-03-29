@@ -1,76 +1,69 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import pb from '@/lib/pocketbaseClient';
+import { auth, googleProvider } from '@/lib/firebaseClient';
+import { 
+  onAuthStateChanged, 
+  signInWithEmailAndPassword, 
+  createUserWithEmailAndPassword, 
+  signOut, 
+  signInWithPopup,
+  updateProfile,
+  sendEmailVerification
+} from "firebase/auth";
 
 const AuthContext = createContext();
 
 export const useAuth = () => useContext(AuthContext);
 
 export const AuthProvider = ({ children }) => {
-  const [currentUser, setCurrentUser] = useState(pb.authStore.model);
+  const [currentUser, setCurrentUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const checkAuth = async () => {
-      if (pb.authStore.isValid) {
-        try {
-          await pb.collection('users').authRefresh();
-          setCurrentUser(pb.authStore.model);
-        } catch (error) {
-          pb.authStore.clear();
-          setCurrentUser(null);
-        }
-      }
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      setCurrentUser(user);
       setLoading(false);
-    };
-
-    checkAuth();
-
-    const unsubscribe = pb.authStore.onChange((token, model) => {
-      setCurrentUser(model);
     });
 
     return () => unsubscribe();
   }, []);
 
   const login = async (email, password) => {
-    const authData = await pb.collection('users').authWithPassword(email, password);
+    const userCredential = await signInWithEmailAndPassword(auth, email, password);
     
-    // Check if email is verified
-    // We only enforce this if VITE_PB_URL is set (meaning we are in production)
-    // AND if the user didn't register with an admin email (for your testing)
-    const isProd = import.meta.env.PROD || !!import.meta.env.VITE_PB_URL;
-    if (isProd && !authData.record.verified && !email.includes('admin')) {
-      pb.authStore.clear();
+    // Email verification check (Enforced in production)
+    if (import.meta.env.PROD && !userCredential.user.emailVerified && !email.includes('admin')) {
+      await signOut(auth);
       throw new Error('Please verify your email before logging in.');
     }
     
-    return authData;
+    return userCredential.user;
   };
 
   const loginWithGoogle = async () => {
-    const authData = await pb.collection('users').authWithOAuth2({ provider: 'google' });
-    return authData;
+    const result = await signInWithPopup(auth, googleProvider);
+    return result.user;
   };
 
   const signup = async (data) => {
-    const record = await pb.collection('users').create({
-      ...data,
-      emailVisibility: true,
-    });
+    const userCredential = await createUserWithEmailAndPassword(auth, data.email, data.password);
     
-    // Trigger verification email
+    // Update profile with name
+    await updateProfile(userCredential.user, {
+      displayName: data.name
+    });
+
+    // Send verification email
     try {
-      await pb.collection('users').requestVerification(data.email);
+      await sendEmailVerification(userCredential.user);
     } catch (e) {
       console.error('Failed to send verification email:', e);
     }
     
-    return record;
+    return userCredential.user;
   };
 
   const logout = () => {
-    pb.authStore.clear();
-    setCurrentUser(null);
+    return signOut(auth);
   };
 
   const value = {

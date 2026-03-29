@@ -1,6 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
-import pb from '@/lib/pocketbaseClient';
+import { db } from '@/lib/firebaseClient';
+import { 
+  collection, 
+  query, 
+  where, 
+  getDocs, 
+  updateDoc, 
+  doc, 
+  arrayUnion 
+} from "firebase/firestore";
 import { useAuth } from '@/contexts/AuthContext';
 import { useGroup } from '@/contexts/GroupContext';
 import { Button } from '@/components/ui/button';
@@ -30,14 +39,19 @@ const JoinGroupPage = () => {
   const fetchGroupInfo = async () => {
     try {
       setLoading(true);
-      const record = await pb.collection('groups').getFirstListItem(`inviteCode = "${inviteCode}"`, {
-        $autoCancel: false
-      });
-      setGroup(record);
+      const q = query(collection(db, "groups"), where("inviteCode", "==", inviteCode));
+      const querySnapshot = await getDocs(q);
       
-      // Check if user is already a participant
-      if (currentUser && record.participants.includes(currentUser.id)) {
-        setAlreadyJoined(true);
+      if (querySnapshot.empty) {
+        setGroup(null);
+      } else {
+        const record = { id: querySnapshot.docs[0].id, ...querySnapshot.docs[0].data() };
+        setGroup(record);
+        
+        // Check if user is already a participant
+        if (currentUser && record.participants && record.participants.includes(currentUser.uid)) {
+          setAlreadyJoined(true);
+        }
       }
     } catch (error) {
       console.error('Error fetching group info:', error);
@@ -55,12 +69,11 @@ const JoinGroupPage = () => {
 
     setIsJoining(true);
     try {
-      // Add user to participants list
-      const updatedParticipants = [...new Set([...group.participants, currentUser.id])];
-      
-      await pb.collection('groups').update(group.id, {
-        participants: updatedParticipants
-      }, { $autoCancel: false });
+      // Add user to participants list using Firebase arrayUnion
+      const groupRef = doc(db, "groups", group.id);
+      await updateDoc(groupRef, {
+        participants: arrayUnion(currentUser.uid)
+      });
 
       toast({ title: 'Welcome!', description: `You have successfully joined ${group.name}.` });
       

@@ -1,5 +1,15 @@
 import React, { useState, useEffect } from 'react';
-import pb from '@/lib/pocketbaseClient';
+import { db } from '@/lib/firebaseClient';
+import { 
+  collection, 
+  addDoc, 
+  updateDoc, 
+  doc, 
+  getDocs, 
+  query, 
+  where, 
+  serverTimestamp 
+} from "firebase/firestore";
 import { useAuth } from '@/contexts/AuthContext';
 import { useGroup } from '@/contexts/GroupContext';
 import { Button } from '@/components/ui/button';
@@ -43,7 +53,7 @@ const ExpenseForm = ({ expenseToEdit, onSuccess, onCancel }) => {
         amount: expenseToEdit.amount.toString(),
         category: expenseToEdit.category || 'Other',
         description: expenseToEdit.description || '',
-        date: expenseToEdit.date ? expenseToEdit.date.split(' ')[0] : new Date().toISOString().split('T')[0],
+        date: expenseToEdit.date || new Date().toISOString().split('T')[0],
         notes: expenseToEdit.notes || ''
       });
       
@@ -65,13 +75,11 @@ const ExpenseForm = ({ expenseToEdit, onSuccess, onCancel }) => {
 
   const fetchMembers = async () => {
     try {
-      const records = await pb.collection('members').getFullList({
-        filter: `groupId = "${currentGroupId}"`,
-        $autoCancel: false
-      });
+      const q = query(collection(db, "members"), where("groupId", "==", currentGroupId));
+      const querySnapshot = await getDocs(q);
+      const records = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
       setMembers(records);
       
-      // Initialize equal splits if not editing
       if (!expenseToEdit && records.length > 0) {
         const equalPct = 100 / records.length;
         const initialSplits = {};
@@ -131,23 +139,25 @@ const ExpenseForm = ({ expenseToEdit, onSuccess, onCancel }) => {
         amount: parseFloat(formData.amount),
         groupId: currentGroupId,
         participants,
-        date: formData.date ? `${formData.date} 12:00:00.000Z` : null,
-        creatorId: currentUser?.id,
-        creatorName: currentUser?.name || currentUser?.email
+        creatorId: currentUser?.uid,
+        creatorName: currentUser?.displayName || currentUser?.email,
+        updated: serverTimestamp()
       };
 
       if (expenseToEdit) {
-        await pb.collection('expenses').update(expenseToEdit.id, data, { $autoCancel: false });
+        await updateDoc(doc(db, "expenses", expenseToEdit.id), data);
         toast({ title: 'Success', description: 'Expense updated' });
       } else {
-        await pb.collection('expenses').create(data, { $autoCancel: false });
+        await addDoc(collection(db, "expenses"), {
+          ...data,
+          created: serverTimestamp()
+        });
         toast({ title: 'Success', description: 'Expense added' });
-        // Reset form
         setFormData({ ...formData, amount: '', description: '', notes: '' });
         setEqualSplits();
       }
       
-      await fetchGroupData(); // Sync global balances immediately
+      await fetchGroupData();
       if (onSuccess) onSuccess();
     } catch (error) {
       toast({ title: 'Error', description: error.message, variant: 'destructive' });
