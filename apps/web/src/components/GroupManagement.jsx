@@ -26,8 +26,7 @@ const GroupManagement = () => {
     try {
       await pb.collection('groups').create({
         name: formData.name,
-        description: formData.description,
-        userId: currentUser.id
+        description: formData.description
       }, { $autoCancel: false });
       
       toast({ title: 'Success', description: 'Group created successfully' });
