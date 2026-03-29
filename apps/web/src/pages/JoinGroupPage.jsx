@@ -74,7 +74,14 @@ const JoinGroupPage = () => {
       }
     } catch (error) {
       console.error('Error fetching group info:', error);
-      toast({ title: 'Error', description: 'Invalid or expired invite link.', variant: 'destructive' });
+      
+      // If permission is denied, it likely means the user is not logged in 
+      // but the link is potentially valid. Show the login prompt.
+      if (error.code === 'permission-denied' || error.message?.includes('permission')) {
+        setGroup({ id: 'pending', name: 'Private Group', isPlaceholder: true });
+      } else {
+        toast({ title: 'Error', description: 'Invalid or expired invite link.', variant: 'destructive' });
+      }
     } finally {
       setLoading(false);
     }
