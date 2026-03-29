@@ -65,6 +65,11 @@ const SettlementList = () => {
   const getMemberName = (id) => members.find(m => m.id === id)?.name || 'Unknown';
 
   const handleStatusToggle = async (settlement) => {
+    // Check permission: only participants can toggle status
+    if (currentMember?.id !== settlement.fromMemberId && currentMember?.id !== settlement.toMemberId) {
+      return toast({ title: 'Permission Denied', description: 'Only participants can change the status.', variant: 'destructive' });
+    }
+
     const newStatus = settlement.status === 'completed' ? 'pending' : 'completed';
     
     try {
@@ -82,6 +87,11 @@ const SettlementList = () => {
   };
 
   const handleSettleSuggestion = async (suggestion) => {
+    // Check permission: only participants can settle
+    if (currentMember?.id !== suggestion.fromMemberId && currentMember?.id !== suggestion.toMemberId) {
+      return toast({ title: 'Permission Denied', description: 'Only participants can settle this debt.', variant: 'destructive' });
+    }
+
     try {
       await addDoc(collection(db, "settlements"), {
         groupId: currentGroupId,
@@ -134,6 +144,11 @@ const SettlementList = () => {
   };
 
   const handleDelete = async (id) => {
+    const record = settlements.find(s => s.id === id);
+    if (record && currentMember?.id !== record.fromMemberId && currentMember?.id !== record.toMemberId) {
+      return toast({ title: 'Permission Denied', description: 'You cannot delete records between others.', variant: 'destructive' });
+    }
+
     if (!window.confirm('Delete this settlement record?')) return;
     try {
       await deleteDoc(doc(db, "settlements", id));
@@ -146,6 +161,12 @@ const SettlementList = () => {
 
   const handleAddManual = async (e) => {
     e.preventDefault();
+    
+    // Check permission: only participants can record manual payments
+    if (currentMember?.id !== formData.fromMemberId && currentMember?.id !== formData.toMemberId) {
+      return toast({ title: 'Permission Denied', description: 'You must be either the payer or the payee.', variant: 'destructive' });
+    }
+
     if (formData.fromMemberId === formData.toMemberId) {
       return toast({ title: 'Error', description: 'Payer and Payee cannot be the same', variant: 'destructive' });
     }
@@ -290,7 +311,7 @@ const SettlementList = () => {
                           </Button>
                         )}
                         
-                        {s.isSuggestion ? (
+                        {s.isSuggestion && (currentMember?.id === s.fromMemberId || currentMember?.id === s.toMemberId) && (
                           <Button 
                             variant="ghost" size="sm" 
                             onClick={() => handleSettleSuggestion(s)}
@@ -298,7 +319,9 @@ const SettlementList = () => {
                           >
                             <CheckCircle2 className="w-4 h-4 mr-1" /> Settle Up
                           </Button>
-                        ) : (
+                        )}
+                        
+                        {!s.isSuggestion && (currentMember?.id === s.fromMemberId || currentMember?.id === s.toMemberId) && (
                           <Button variant="ghost" size="icon" onClick={() => handleDelete(s.id)} className="h-8 w-8 text-red-500 hover:text-red-600 hover:bg-red-50">
                             <Trash2 className="w-4 h-4" />
                           </Button>
