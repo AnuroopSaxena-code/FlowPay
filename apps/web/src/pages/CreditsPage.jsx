@@ -12,8 +12,7 @@ const CreditsPage = () => {
         <title>About FlowPay</title>
       </Helmet>
       
-      <div className="min-h-[calc(100vh-4rem)] bg-slate-50 dark:bg-slate-900/50 py-12">
-        <div className="container mx-auto px-4 max-w-4xl">
+      <div className="container mx-auto px-4 sm:px-8 py-12 max-w-5xl bg-background/95 backdrop-blur-3xl shadow-xl dark:shadow-none border-x border-border/20 dark:border-transparent min-h-[calc(100vh-4rem)]">
           
           {/* Hero Section */}
           <motion.div 
@@ -141,9 +140,7 @@ const CreditsPage = () => {
               </div>
             </motion.div>
           </div>
-
         </div>
-      </div>
     </>
   );
 };
