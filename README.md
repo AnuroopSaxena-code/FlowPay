@@ -4,9 +4,11 @@
 [![React](https://img.shields.io/badge/Frontend-React%2018-blue.svg)](https://reactjs.org/)
 [![Vite](https://img.shields.io/badge/Build%20Tool-Vite-646CFF.svg)](https://vitejs.dev/)
 [![Tailwind CSS](https://img.shields.io/badge/Styling-Tailwind%20CSS-38B2AC.svg)](https://tailwindcss.com/)
-[![PocketBase](https://img.shields.io/badge/Backend-PocketBase-lightgrey.svg)](https://pocketbase.io/)
+[![Firebase](https://img.shields.io/badge/Backend-Firebase-FFCA28.svg)](https://firebase.google.com/)
 
 > **Settle Expenses Without the Stress.**
+
+🔗 **Live Application**: [flowpay-app.vercel.app](https://flowpay-app.vercel.app/)
 
 FlowPay is the ultimate dashboard designed for groups, roommates, and travelers to track shared expenses, calculate optimal settlements, and visualize spending habits with ease. Built with a modern tech stack, it provides a seamless, transparent, and fair experience for managing collective finances.
 
@@ -35,8 +37,9 @@ FlowPay is the ultimate dashboard designed for groups, roommates, and travelers 
 - **Charts**: [Recharts](https://recharts.org/)
 
 ### Backend & Infrastructure
-- **Database/Auth**: [PocketBase](https://pocketbase.io/) (and [Firebase](https://firebase.google.com/) for supplemental services)
+- **Database/Auth**: [Firebase](https://firebase.google.com/) (Auth & Cloud Firestore)
 - **Runtime**: [Node.js](https://nodejs.org/)
+- **Infrastructure**: [Vercel](https://vercel.com/)
 - **Monorepo Management**: NPM Workspaces & [Concurrently](https://github.com/open-cli-tools/concurrently)
 
 ---
@@ -48,8 +51,7 @@ FlowPay is organized as a monorepo for better development workflow:
 ```text
 FlowPay/
 ├── apps/
-│   ├── web/           # React + Vite frontend
-│   └── pocketbase/    # PocketBase backend & database
+│   └── web/           # React + Vite frontend
 ├── package.json       # Root configuration with workspace scripts
 └── README.md          # You are here!
 ```
@@ -90,14 +92,13 @@ VITE_FIREBASE_APP_ID=your_app_id
 ```
 
 ### 4. Run the Application
-You can start both the frontend and the PocketBase backend concurrently from the project root:
+You can start the development server from the project root:
 
 ```bash
 npm run dev
 ```
 
 - **Web App**: Accessible at `http://localhost:3000`
-- **PocketBase Admin**: Accessible at `http://localhost:8090/_/`
 
 ---
 
@@ -129,4 +130,4 @@ Distributed under the MIT License. See `LICENSE` for more information.
 
 ---
 
-<p align="center">Made with ❤️ by Anuroop Saxena</p>
+<p align="center">Made by Anuroop Saxena</p>
