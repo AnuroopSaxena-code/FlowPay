@@ -72,6 +72,30 @@ const MemberSetup = () => {
     if (!window.confirm(`Remove ${name} from the group? This might affect existing expenses.`)) return;
 
     try {
+      const paidExpenses = await pb.collection('expenses').getFullList({ filter: `payerId = "${id}"`, $autoCancel: false });
+      const deletedExpenseIds = new Set();
+      for (const exp of paidExpenses) {
+        await pb.collection('expenses').delete(exp.id, { $autoCancel: false });
+        deletedExpenseIds.add(exp.id);
+      }
+
+      const settlements = await pb.collection('settlements').getFullList({ filter: `fromMemberId = "${id}" || toMemberId = "${id}"`, $autoCancel: false });
+      for (const st of settlements) {
+        await pb.collection('settlements').delete(st.id, { $autoCancel: false });
+      }
+
+      const allExpenses = await pb.collection('expenses').getFullList({ filter: `groupId = "${currentGroupId}"`, $autoCancel: false });
+      for (const exp of allExpenses) {
+        if (deletedExpenseIds.has(exp.id)) continue;
+        
+        try {
+          const participants = typeof exp.participants === 'string' ? JSON.parse(exp.participants) : exp.participants;
+          if (Array.isArray(participants) && participants.some(p => p.memberId === id)) {
+            await pb.collection('expenses').delete(exp.id, { $autoCancel: false });
+          }
+        } catch(e) {}
+      }
+
       await pb.collection('members').delete(id, { $autoCancel: false });
       toast({ title: 'Success', description: 'Member removed' });
       await fetchMembers();

@@ -44,6 +44,15 @@ const GroupManagement = () => {
     if (!window.confirm(`Are you sure you want to delete the group "${name}"? All associated members and expenses will be lost.`)) return;
 
     try {
+      const expenses = await pb.collection('expenses').getFullList({ filter: `groupId = "${id}"`, $autoCancel: false });
+      for (const exp of expenses) await pb.collection('expenses').delete(exp.id, { $autoCancel: false });
+      
+      const settlements = await pb.collection('settlements').getFullList({ filter: `groupId = "${id}"`, $autoCancel: false });
+      for (const st of settlements) await pb.collection('settlements').delete(st.id, { $autoCancel: false });
+      
+      const members = await pb.collection('members').getFullList({ filter: `groupId = "${id}"`, $autoCancel: false });
+      for (const m of members) await pb.collection('members').delete(m.id, { $autoCancel: false });
+
       await pb.collection('groups').delete(id, { $autoCancel: false });
       toast({ title: 'Success', description: 'Group deleted' });
       await fetchGroups();
