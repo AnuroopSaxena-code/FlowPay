@@ -119,7 +119,7 @@ const CreditsPage = () => {
                   <div>
                     <h4 className="text-sm font-semibold text-slate-400 uppercase tracking-wider mb-3">Backend & Database</h4>
                     <div className="flex flex-wrap gap-2">
-                      {['PocketBase', 'SQLite', 'Real-time Subscriptions'].map(tech => (
+                      {['Firebase Auth', 'Cloud Firestore', 'Cloud Functions'].map(tech => (
                         <Badge key={tech} variant="outline" className="bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-900/20 dark:text-emerald-300 dark:border-emerald-800">
                           {tech}
                         </Badge>
