@@ -150,7 +150,14 @@ const ExpenseList = ({ onEdit, refreshTrigger }) => {
                     <TableCell className="whitespace-nowrap text-sm text-muted-foreground">
                       {exp.date ? new Date(exp.date).toLocaleDateString() : '-'}
                     </TableCell>
-                    <TableCell className="font-medium">{exp.description}</TableCell>
+                    <TableCell className="font-medium">
+                      <div>{exp.description}</div>
+                      {exp.creatorName && (
+                        <div className="text-[10px] text-muted-foreground font-normal">
+                          Recorded by {exp.creatorName}
+                        </div>
+                      )}
+                    </TableCell>
                     <TableCell>
                       <span className={`px-2.5 py-1 rounded-full text-xs font-medium ${CATEGORY_COLORS[exp.category] || CATEGORY_COLORS.Other}`}>
                         {exp.category || 'Other'}

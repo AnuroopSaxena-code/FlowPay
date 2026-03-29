@@ -45,9 +45,14 @@ export const GroupProvider = ({ children }) => {
   }, [currentGroupId]);
 
   const fetchGroups = async () => {
+    if (!currentUser) return;
     try {
       setLoading(true);
+      // Filter groups where the current user is either the owner OR a participant
+      const filter = `owner = "${currentUser.id}" || participants ~ "${currentUser.id}"`;
+      
       const records = await pb.collection('groups').getFullList({
+        filter: filter,
         sort: '-created',
         $autoCancel: false
       });

@@ -1,5 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import pb from '@/lib/pocketbaseClient';
+import { useAuth } from '@/contexts/AuthContext';
 import { useGroup } from '@/contexts/GroupContext';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -19,6 +20,7 @@ const SettlementList = () => {
     expenses,
     settlements
   } = useGroup();
+  const { currentUser } = useAuth();
   const { toast } = useToast();
   
   const [filter, setFilter] = useState('all'); // all, pending, completed
@@ -73,7 +75,9 @@ const SettlementList = () => {
         amount: suggestion.amount,
         status: 'completed',
         completedDate: new Date().toISOString(),
-        date: new Date().toISOString().split('T')[0]
+        date: new Date().toISOString().split('T')[0],
+        creatorId: currentUser?.id,
+        creatorName: currentUser?.name || currentUser?.email
       }, { $autoCancel: false });
       
       toast({ title: 'Success', description: 'Debt recorded and settled!' });
@@ -108,7 +112,9 @@ const SettlementList = () => {
         amount: parseFloat(formData.amount),
         date: formData.date ? `${formData.date} 12:00:00.000Z` : null,
         status: 'completed',
-        completedDate: new Date().toISOString()
+        completedDate: new Date().toISOString(),
+        creatorId: currentUser?.id,
+        creatorName: currentUser?.name || currentUser?.email
       }, { $autoCancel: false });
       
       toast({ title: 'Success', description: 'Settlement recorded' });
@@ -198,7 +204,14 @@ const SettlementList = () => {
                     </TableCell>
                     <TableCell className="font-medium">{getMemberName(s.fromMemberId)}</TableCell>
                     <TableCell className="font-medium">{getMemberName(s.toMemberId)}</TableCell>
-                    <TableCell className="text-right font-bold">₹{s.amount.toFixed(2)}</TableCell>
+                    <TableCell className="text-right">
+                      <div className="font-bold">₹{s.amount.toFixed(2)}</div>
+                      {!s.isSuggestion && s.creatorName && (
+                        <div className="text-[10px] text-muted-foreground font-normal">
+                          By {s.creatorName}
+                        </div>
+                      )}
+                    </TableCell>
                     <TableCell className="text-center">
                       {s.isSuggestion ? (
                         <div className="flex items-center justify-center gap-1 text-xs font-medium text-amber-600 dark:text-amber-400">

@@ -34,12 +34,34 @@ export const AuthProvider = ({ children }) => {
 
   const login = async (email, password) => {
     const authData = await pb.collection('users').authWithPassword(email, password);
+    
+    // Check if email is verified (only enforced in cloud, optional in local)
+    if (import.meta.env.VITE_PB_URL && !authData.record.verified) {
+      pb.authStore.clear();
+      throw new Error('Please verify your email before logging in.');
+    }
+    
+    return authData;
+  };
+
+  const loginWithGoogle = async () => {
+    const authData = await pb.collection('users').authWithOAuth2({ provider: 'google' });
     return authData;
   };
 
   const signup = async (data) => {
-    const record = await pb.collection('users').create(data);
-    await login(data.email, data.password);
+    const record = await pb.collection('users').create({
+      ...data,
+      emailVisibility: true,
+    });
+    
+    // Trigger verification email
+    try {
+      await pb.collection('users').requestVerification(data.email);
+    } catch (e) {
+      console.error('Failed to send verification email:', e);
+    }
+    
     return record;
   };
 
@@ -51,6 +73,7 @@ export const AuthProvider = ({ children }) => {
   const value = {
     currentUser,
     login,
+    loginWithGoogle,
     signup,
     logout,
     isAuthenticated: !!currentUser,

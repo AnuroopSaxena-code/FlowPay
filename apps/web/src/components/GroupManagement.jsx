@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
-import { Plus, Trash2, Loader2 } from 'lucide-react';
+import { Plus, Trash2, Loader2, Share2, CheckCircle2 } from 'lucide-react';
 
 const GroupManagement = () => {
   const { currentUser } = useAuth();
@@ -22,11 +22,16 @@ const GroupManagement = () => {
     e.preventDefault();
     if (!formData.name.trim()) return;
 
+    const inviteCode = Math.random().toString(36).substring(2, 8).toUpperCase();
+    
     setLoading(true);
     try {
       await pb.collection('groups').create({
         name: formData.name,
-        description: formData.description
+        description: formData.description,
+        owner: currentUser.id,
+        participants: [currentUser.id],
+        inviteCode: inviteCode
       }, { $autoCancel: false });
       
       toast({ title: 'Success', description: 'Group created successfully' });
@@ -111,6 +116,19 @@ const GroupManagement = () => {
                   {group.description && <p className="text-sm text-muted-foreground">{group.description}</p>}
                 </div>
                 <div className="flex items-center gap-2">
+                  <Button 
+                    variant="ghost" 
+                    size="icon" 
+                    className="text-teal-600 hover:text-teal-700 hover:bg-teal-50" 
+                    onClick={() => {
+                      const link = `${window.location.origin}/join/${group.inviteCode}`;
+                      navigator.clipboard.writeText(link);
+                      toast({ title: 'Link Copied!', description: 'Invite link copied to clipboard. Send it to your friends!' });
+                    }}
+                    title="Copy Invite Link"
+                  >
+                    <Share2 className="w-4 h-4" />
+                  </Button>
                   {currentGroupId !== group.id && (
                     <Button variant="secondary" size="sm" onClick={() => switchGroup(group.id)}>
                       Switch to

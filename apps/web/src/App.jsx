@@ -18,6 +18,7 @@ import ExpensesPage from '@/pages/ExpensesPage';
 import SettlementsPage from '@/pages/SettlementsPage';
 import AnalyticsPage from '@/pages/AnalyticsPage';
 import CreditsPage from '@/pages/CreditsPage';
+import JoinGroupPage from '@/pages/JoinGroupPage';
 
 function App() {
   return (
@@ -36,6 +37,7 @@ function App() {
                 <Route path="/login" element={<LoginPage />} />
                 <Route path="/signup" element={<SignupPage />} />
                 <Route path="/about" element={<CreditsPage />} />
+                <Route path="/join/:inviteCode" element={<JoinGroupPage />} />
                 
                 {/* Protected Routes */}
                 <Route path="/dashboard" element={<ProtectedRoute><DashboardPage /></ProtectedRoute>} />

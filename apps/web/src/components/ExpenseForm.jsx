@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import pb from '@/lib/pocketbaseClient';
+import { useAuth } from '@/contexts/AuthContext';
 import { useGroup } from '@/contexts/GroupContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -12,6 +13,7 @@ import { Loader2, SplitSquareHorizontal } from 'lucide-react';
 const CATEGORIES = ['Food', 'Transport', 'Accommodation', 'Entertainment', 'Utilities', 'Shopping', 'Other'];
 
 const ExpenseForm = ({ expenseToEdit, onSuccess, onCancel }) => {
+  const { currentUser } = useAuth();
   const { currentGroupId, fetchGroupData } = useGroup();
   const { toast } = useToast();
   
@@ -129,7 +131,9 @@ const ExpenseForm = ({ expenseToEdit, onSuccess, onCancel }) => {
         amount: parseFloat(formData.amount),
         groupId: currentGroupId,
         participants,
-        date: formData.date ? `${formData.date} 12:00:00.000Z` : null
+        date: formData.date ? `${formData.date} 12:00:00.000Z` : null,
+        creatorId: currentUser?.id,
+        creatorName: currentUser?.name || currentUser?.email
       };
 
       if (expenseToEdit) {
