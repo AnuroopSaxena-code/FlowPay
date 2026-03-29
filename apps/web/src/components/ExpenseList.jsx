@@ -70,7 +70,7 @@ const ExpenseList = ({ onEdit, refreshTrigger }) => {
   }, [sortOrder]);
 
   const handleDelete = async (id) => {
-    if (!window.confirm('Are you sure you want to delete this expense?')) return;
+    if (!window.confirm('Are you sure you want to delete this expense?\n\nNOTE: Since balances are continuously calculated, deleting this expense will NOT automatically delete any payments you made to settle it. If you already settled this expense, please make sure to also delete the corresponding payment from the "Settlements" tab.')) return;
     try {
       await pb.collection('expenses').delete(id, { $autoCancel: false });
       toast({ title: 'Success', description: 'Expense deleted' });

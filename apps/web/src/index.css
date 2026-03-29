@@ -77,3 +77,72 @@
     font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   }
 }
+
+@layer utilities {
+  .btn-3d {
+    transition: transform 0.1s ease, box-shadow 0.1s ease, filter 0.1s ease;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.2),
+                inset 0 -2px 0 rgba(0, 0, 0, 0.1),
+                0 4px 0 rgba(0, 0, 0, 0.3),
+                0 6px 10px rgba(0, 0, 0, 0.15);
+  }
+  
+  @media (prefers-reduced-motion: no-preference) {
+    .btn-3d:active:not(:disabled) {
+      transform: translateY(4px);
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05),
+                  inset 0 0px 0 rgba(0, 0, 0, 0),
+                  0 0px 0 rgba(0, 0, 0, 0.3),
+                  0 2px 4px rgba(0, 0, 0, 0.1);
+    }
+  }
+
+  .btn-3d:disabled {
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05), 
+                0 4px 0 rgba(0, 0, 0, 0.1);
+  }
+
+  .card-3d {
+    box-shadow: 
+      inset 0 1px 0 rgba(255, 255, 255, 0.1),
+      inset 0 0 0 1px rgba(255, 255, 255, 0.05),
+      0 8px 30px rgba(0, 0, 0, 0.12),
+      0 2px 4px rgba(0, 0, 0, 0.08),
+      0 12px 0 rgba(0, 0, 0, 0.04);
+    transform: perspective(1000px) rotateX(0deg);
+    transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    border: 1px solid hsl(var(--border) / 0.5);
+  }
+  
+  .card-3d:hover {
+    transform: translateY(-2px);
+    box-shadow: 
+      inset 0 1px 0 rgba(255, 255, 255, 0.15),
+      inset 0 0 0 1px rgba(255, 255, 255, 0.08),
+      0 12px 40px rgba(0, 0, 0, 0.16),
+      0 4px 8px rgba(0, 0, 0, 0.1),
+      0 14px 0 rgba(0, 0, 0, 0.04);
+  }
+
+  .input-3d {
+    box-shadow: 
+      inset 0 2px 4px rgba(0, 0, 0, 0.08),
+      0 1px 0 rgba(255, 255, 255, 0.4);
+    border-top: 1px solid rgba(0, 0, 0, 0.1);
+    transition: box-shadow 0.2s;
+  }
+  
+  .input-3d:focus-within, .input-3d:focus {
+    box-shadow: 
+      inset 0 2px 4px rgba(0, 0, 0, 0.1),
+      0 0 0 2px hsl(var(--ring) / 0.3),
+      0 1px 0 rgba(255, 255, 255, 0.4);
+  }
+  
+  .dark .input-3d {
+    box-shadow: 
+      inset 0 2px 4px rgba(0, 0, 0, 0.3),
+      0 1px 0 rgba(255, 255, 255, 0.05);
+    border-top: 1px solid rgba(0, 0, 0, 0.4);
+  }
+}

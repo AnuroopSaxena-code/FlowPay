@@ -13,7 +13,7 @@ const DashboardPage = () => {
       <Helmet>
         <title>Dashboard - FlowPay</title>
       </Helmet>
-      <div className="container mx-auto px-4 py-8 max-w-6xl">
+      <div className="container mx-auto px-4 sm:px-8 py-8 md:py-12 max-w-6xl bg-background/95 backdrop-blur-3xl shadow-xl dark:shadow-none border-x border-border/20 dark:border-transparent min-h-screen">
         <h1 className="text-3xl font-bold mb-8">Dashboard</h1>
         
         <div className="grid lg:grid-cols-3 gap-8">

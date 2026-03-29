@@ -7,6 +7,7 @@ import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import ScrollToTop from '@/components/ScrollToTop';
 import { Toaster } from '@/components/ui/toaster';
+import InteractiveBackground from '@/components/InteractiveBackground';
 
 // Pages
 import HomePage from '@/pages/HomePage';
@@ -24,9 +25,12 @@ function App() {
       <GroupProvider>
         <Router>
           <ScrollToTop />
-          <div className="min-h-screen flex flex-col bg-background text-foreground">
-            <Header />
-            <main className="flex-1 flex flex-col">
+          <div className="min-h-screen flex flex-col text-foreground relative z-0 overflow-hidden">
+            <InteractiveBackground />
+            <div className="relative z-10 bg-background/95 backdrop-blur-md border-b">
+              <Header />
+            </div>
+            <main className="flex-1 flex flex-col relative z-20 w-full transition-all duration-300">
               <Routes>
                 <Route path="/" element={<HomePage />} />
                 <Route path="/login" element={<LoginPage />} />
@@ -40,7 +44,11 @@ function App() {
                 <Route path="/analytics" element={<ProtectedRoute><AnalyticsPage /></ProtectedRoute>} />
               </Routes>
             </main>
-            <Footer />
+            <div className="relative z-10 bg-background/95 backdrop-blur-md mt-auto pointer-events-none">
+              <div className="pointer-events-auto">
+                <Footer />
+              </div>
+            </div>
           </div>
           <Toaster />
         </Router>

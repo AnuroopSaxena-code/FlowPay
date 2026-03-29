@@ -58,7 +58,7 @@ const SettlementsPage = () => {
         )}
       </AnimatePresence>
 
-      <div className="container mx-auto px-4 py-8 max-w-6xl">
+      <div className="container mx-auto px-4 sm:px-8 py-8 md:py-12 max-w-6xl bg-background/95 backdrop-blur-3xl shadow-xl dark:shadow-none border-x border-border/20 dark:border-transparent min-h-screen">
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 gap-4">
           <h1 className="text-3xl font-bold">Settlements</h1>
           
