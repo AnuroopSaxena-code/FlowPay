@@ -35,8 +35,11 @@ export const AuthProvider = ({ children }) => {
   const login = async (email, password) => {
     const authData = await pb.collection('users').authWithPassword(email, password);
     
-    // Check if email is verified (only enforced in cloud, optional in local)
-    if (import.meta.env.VITE_PB_URL && !authData.record.verified) {
+    // Check if email is verified
+    // We only enforce this if VITE_PB_URL is set (meaning we are in production)
+    // AND if the user didn't register with an admin email (for your testing)
+    const isProd = import.meta.env.PROD || !!import.meta.env.VITE_PB_URL;
+    if (isProd && !authData.record.verified && !email.includes('admin')) {
       pb.authStore.clear();
       throw new Error('Please verify your email before logging in.');
     }

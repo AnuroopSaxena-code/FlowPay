@@ -120,8 +120,21 @@ const GroupManagement = () => {
                     variant="ghost" 
                     size="icon" 
                     className="text-teal-600 hover:text-teal-700 hover:bg-teal-50" 
-                    onClick={() => {
-                      const link = `${window.location.origin}/join/${group.inviteCode}`;
+                    onClick={async () => {
+                      let inviteCode = group.inviteCode;
+                      
+                      // Fallback: Generate code if missing (only for older records)
+                      if (!inviteCode) {
+                        inviteCode = Math.random().toString(36).substring(2, 8).toUpperCase();
+                        try {
+                          await pb.collection('groups').update(group.id, { inviteCode }, { $autoCancel: false });
+                          toast({ title: 'Safety Check', description: 'Generated a new invite code for this group.' });
+                        } catch (e) {
+                          console.error('Failed to generate fallback code:', e);
+                        }
+                      }
+
+                      const link = `${window.location.origin}/join/${inviteCode}`;
                       navigator.clipboard.writeText(link);
                       toast({ title: 'Link Copied!', description: 'Invite link copied to clipboard. Send it to your friends!' });
                     }}
