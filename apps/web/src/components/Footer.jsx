@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { PieChart, Mail } from 'lucide-react';
+import { PieChart, Mail, Github } from 'lucide-react';
 
 const Footer = () => {
   const currentYear = new Date().getFullYear();
@@ -27,16 +27,23 @@ const Footer = () => {
               <li><Link to="/" className="text-slate-500 hover:text-teal-600 dark:hover:text-teal-400 transition-colors">Home</Link></li>
               <li><Link to="/about" className="text-slate-500 hover:text-teal-600 dark:hover:text-teal-400 transition-colors">About FlowPay</Link></li>
               <li><Link to="/dashboard" className="text-slate-500 hover:text-teal-600 dark:hover:text-teal-400 transition-colors">Dashboard</Link></li>
+              <li><a href="https://github.com/AnuroopSaxena-code/FlowPay" target="_blank" rel="noopener noreferrer" className="text-slate-500 hover:text-teal-600 dark:hover:text-teal-400 transition-colors">GitHub Repo</a></li>
             </ul>
           </div>
 
           <div>
-            <h4 className="font-semibold text-slate-900 dark:text-slate-100 mb-4">Contact</h4>
+            <h4 className="font-semibold text-slate-900 dark:text-slate-100 mb-4">Support</h4>
             <ul className="space-y-2">
               <li>
                 <a href="mailto:anuroop.saxena1@gmail.com" className="flex items-center gap-2 text-slate-500 hover:text-teal-600 dark:hover:text-teal-400 transition-colors">
                   <Mail className="w-4 h-4" />
                   Email Support
+                </a>
+              </li>
+              <li>
+                <a href="https://github.com/AnuroopSaxena-code/FlowPay" target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-slate-500 hover:text-teal-600 dark:hover:text-teal-400 transition-colors">
+                  <Github className="w-4 h-4" />
+                  GitHub Repository
                 </a>
               </li>
             </ul>

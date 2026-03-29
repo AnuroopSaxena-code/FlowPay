@@ -3,7 +3,7 @@ import { Helmet } from 'react-helmet';
 import { motion } from 'framer-motion';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Code2, Heart, Mail, User, Zap, Shield, Smartphone } from 'lucide-react';
+import { Code2, Heart, Mail, User, Zap, Shield, Smartphone, Github, ExternalLink } from 'lucide-react';
 
 const CreditsPage = () => {
   return (
@@ -58,13 +58,26 @@ const CreditsPage = () => {
                   Passionate software developer focused on creating intuitive, high-performance web applications that solve real-world problems through elegant code and thoughtful design.
                 </p>
                 
-                <a 
-                  href="mailto:anuroop.saxena1@gmail.com" 
-                  className="inline-flex items-center gap-2 text-teal-600 hover:text-teal-700 dark:text-teal-400 dark:hover:text-teal-300 font-medium transition-colors"
-                >
-                  <Mail className="w-5 h-5" />
-                  anuroop.saxena1@gmail.com
-                </a>
+                <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+                  <a 
+                    href="mailto:anuroop.saxena1@gmail.com" 
+                    className="inline-flex items-center gap-2 text-slate-600 hover:text-teal-600 dark:text-slate-400 dark:hover:text-teal-400 font-medium transition-colors"
+                  >
+                    <Mail className="w-5 h-5" />
+                    anuroop.saxena1@gmail.com
+                  </a>
+                  <span className="hidden sm:block text-slate-300 dark:text-slate-700">|</span>
+                  <a 
+                    href="https://github.com/AnuroopSaxena-code/FlowPay" 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-2 text-teal-600 hover:text-teal-700 dark:text-teal-400 dark:hover:text-teal-300 font-medium transition-colors"
+                  >
+                    <Github className="w-5 h-5" />
+                    GitHub Repository
+                    <ExternalLink className="w-3 h-3 ml-0.5" />
+                  </a>
+                </div>
               </CardContent>
             </Card>
           </motion.div>
