@@ -153,15 +153,22 @@ const ExpenseForm = ({ expenseToEdit, onSuccess, onCancel }) => {
       return toast({ title: 'Invalid Payer Amounts', description: `Total amount paid (₹${totalPaid.toFixed(2)}) must equal the expense total (₹${parseFloat(formData.amount).toFixed(2)})`, variant: 'destructive' });
     }
 
+    const cleanAmount = formData.amount.toString().replace(/,/g, '');
+    const amountVal = parseFloat(cleanAmount) || 0;
+
+    if (amountVal > 10000000) {
+      return toast({ title: 'Amount Too Large', description: 'Maximum expense amount is ₹10,000,000 to prevent errors.', variant: 'destructive' });
+    }
+
     setLoading(true);
     try {
       const participants = Object.entries(splits)
         .filter(([_, pct]) => pct > 0)
-        .map(([memberId, percentage]) => ({ memberId, percentage: parseFloat(percentage) }));
+        .map(([memberId, percentage]) => ({ memberId: memberId.trim(), percentage: parseFloat(percentage) }));
 
       const data = {
         ...formData,
-        amount: parseFloat(formData.amount),
+        amount: amountVal,
         groupId: currentGroupId,
         participants,
         updated: serverTimestamp()
