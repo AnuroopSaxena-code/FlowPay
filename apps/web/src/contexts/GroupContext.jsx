@@ -93,7 +93,7 @@ export const GroupProvider = ({ children }) => {
     if (!currentGroupId) return;
     try {
       const qMembers = query(collection(db, "members"), where("groupId", "==", currentGroupId));
-      const qExpenses = query(collection(db, "expenses"), where("groupId", "==", currentGroupId), orderBy("date", "desc"));
+      const qExpenses = query(collection(db, "expenses"), where("groupId", "==", currentGroupId));
       const qSettlements = query(collection(db, "settlements"), where("groupId", "==", currentGroupId));
 
       const [snapMembers, snapExpenses, snapSettlements] = await Promise.all([
@@ -103,7 +103,7 @@ export const GroupProvider = ({ children }) => {
       ]);
 
       setMembers(snapMembers.docs.map(doc => ({ id: doc.id, ...doc.data() })));
-      setExpenses(snapExpenses.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+      setExpenses(snapExpenses.docs.map(doc => ({ id: doc.id, ...doc.data() })).sort((a, b) => new Date(b.date) - new Date(a.date)));
       setSettlements(snapSettlements.docs.map(doc => ({ id: doc.id, ...doc.data() })));
     } catch (error) {
       console.error('Error fetching group data:', error);
