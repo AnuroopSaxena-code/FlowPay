@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import pb from '@/lib/pocketbaseClient';
+import { db } from '@/lib/firebaseClient';
+import { collection, query, where, getDocs } from "firebase/firestore";
 import { useGroup } from '@/contexts/GroupContext';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, LineChart, Line } from 'recharts';
@@ -27,10 +28,16 @@ const AnalyticsDashboard = () => {
   const fetchAnalytics = async () => {
     setLoading(true);
     try {
-      const [members, expenses] = await Promise.all([
-        pb.collection('members').getFullList({ filter: `groupId = "${currentGroupId}"`, $autoCancel: false }),
-        pb.collection('expenses').getFullList({ filter: `groupId = "${currentGroupId}"`, sort: 'date', $autoCancel: false })
+      const qMembers = query(collection(db, "members"), where("groupId", "==", currentGroupId));
+      const qExpenses = query(collection(db, "expenses"), where("groupId", "==", currentGroupId));
+      
+      const [snapMembers, snapExpenses] = await Promise.all([
+        getDocs(qMembers),
+        getDocs(qExpenses)
       ]);
+
+      const members = snapMembers.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      const expenses = snapExpenses.docs.map(doc => ({ id: doc.id, ...doc.data() }));
 
       const memberMap = {};
       members.forEach(m => memberMap[m.id] = m.name);

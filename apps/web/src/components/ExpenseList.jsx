@@ -69,8 +69,7 @@ const ExpenseList = ({ onEdit, refreshTrigger }) => {
 
       const qExpenses = query(
         collection(db, "expenses"),
-        where("groupId", "==", currentGroupId),
-        orderBy(field, direction)
+        where("groupId", "==", currentGroupId)
       );
       
       const snapExpenses = await getDocs(qExpenses);
@@ -78,6 +77,21 @@ const ExpenseList = ({ onEdit, refreshTrigger }) => {
         id: doc.id,
         ...doc.data()
       }));
+
+      // In-memory sorting replacements for Firestore orderBy
+      records.sort((a, b) => {
+        let valA = a[field];
+        let valB = b[field];
+        
+        if (field === 'date') {
+          valA = new Date(valA || 0);
+          valB = new Date(valB || 0);
+        }
+        
+        if (direction === 'asc') return valA > valB ? 1 : -1;
+        return valA < valB ? 1 : -1;
+      });
+
       setExpenses(records);
     } catch (error) {
       console.error('Error fetching expenses:', error);
