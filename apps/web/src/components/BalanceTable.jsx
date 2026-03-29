@@ -1,28 +1,50 @@
-import React, { useMemo } from 'react';
+import React, { useState, useMemo } from 'react';
+import emailjs from '@emailjs/browser';
 import { useGroup } from '@/contexts/GroupContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { ArrowRight, TrendingUp, TrendingDown, Mail } from 'lucide-react';
+import { ArrowRight, TrendingUp, TrendingDown, Mail, Loader2 } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
 
 const BalanceTable = () => {
   const { currentGroupId, members, expenses, settlements, calculateBalances, calculateOptimalSettlements, loading } = useGroup();
   const { currentUser } = useAuth();
+  const [isSending, setIsSending] = useState(null);
 
   const currentMember = useMemo(() => 
     members.find(m => m.userId === currentUser?.uid),
     [members, currentUser]
   );
 
-  const handleNotify = (s) => {
+  const handleNotify = async (s) => {
     const fromMember = members.find(m => m.id === s.fromId);
+    const toMember = members.find(m => m.id === s.toId);
+    
     if (!fromMember || !fromMember.email) return;
 
-    const subject = encodeURIComponent('Settlement Reminder - FlowPay');
-    const body = encodeURIComponent(`You owe ${currentMember?.name} (email: ${currentUser?.email}) ₹${s.amount.toFixed(2)}. Check the settlement on: ${window.location.origin}/settlements`);
-    
-    window.location.href = `mailto:${fromMember.email}?subject=${subject}&body=${body}`;
+    setIsSending(s.fromId + '_' + s.toId);
+    try {
+      await emailjs.send(
+        'service_5j2wm6l', 
+        'template_27knelj', 
+        {
+          to_name: fromMember.name,
+          from_name: toMember?.name || currentMember?.name,
+          from_email: currentUser?.email,
+          amount: s.amount.toFixed(2),
+          link: window.location.origin + '/settlements',
+        }, 
+        'Kk8WwPJRWRVJgrrS7'
+      );
+      toast({ title: 'Success!', description: `Nudge email sent to ${fromMember.name}.` });
+    } catch (error) {
+      console.error('EmailJS Error:', error);
+      toast({ title: 'Error', description: 'Failed to send automated email.', variant: 'destructive' });
+    } finally {
+      setIsSending(null);
+    }
   };
 
   // Compute balances and optimal settlements reactively
@@ -110,10 +132,11 @@ const BalanceTable = () => {
                         variant="ghost" 
                         size="icon" 
                         onClick={() => handleNotify(s)} 
+                        disabled={isSending === (s.fromId + '_' + s.toId)}
                         className="h-8 w-8 text-teal-600 hover:text-teal-700 hover:bg-teal-50"
-                        title="Send email notification"
+                        title="Send automated email notification"
                       >
-                        <Mail className="w-4 h-4" />
+                        {isSending === (s.fromId + '_' + s.toId) ? <Loader2 className="w-4 h-4 animate-spin" /> : <Mail className="w-4 h-4" />}
                       </Button>
                     )}
                   </div>

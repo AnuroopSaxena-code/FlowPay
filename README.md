@@ -22,6 +22,7 @@ FlowPay is the ultimate dashboard designed for groups, roommates, and travelers 
 - **🧠 Smart Settlements**: Our advanced algorithm calculates the minimum number of transactions needed to settle all debts across a group.
 - **🧪 Simulation Mode**: A powerful sandbox environment to "try before you buy." Test new expenses and payments to see their impact on group balances before committing them to the permanent ledger.
 - **🤝 Group Management**: Create separate groups for different circles (Roommates, Trip to Bali, Family) and manage members effortlessly.
+- **📧 Automated Notifications**: Send instant, background email nudges to debtors via EmailJS, providing a seamless "settle up" experience.
 - **📱 Responsive Design**: A premium, "Deep Space" themed UI that works perfectly on desktop and mobile devices.
 
 ---
@@ -41,6 +42,7 @@ FlowPay is the ultimate dashboard designed for groups, roommates, and travelers 
 - **Database/Auth**: [Firebase](https://firebase.google.com/) (Auth & Cloud Firestore)
 - **Runtime**: [Node.js](https://nodejs.org/)
 - **Infrastructure**: [Vercel](https://vercel.com/)
+- **Email Service**: [EmailJS](https://www.emailjs.com/)
 - **Monorepo Management**: NPM Workspaces & [Concurrently](https://github.com/open-cli-tools/concurrently)
 
 ---

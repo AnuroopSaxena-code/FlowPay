@@ -97,6 +97,7 @@ const CreditsPage = () => {
                 {[
                   { title: 'Smart Settlements', desc: 'Advanced algorithms minimize the number of transactions needed to settle debts.' },
                   { title: 'Simulation Mode', desc: 'Test payments and expenses before committing them to the group ledger.' },
+                  { title: 'Automated Nudges', desc: 'Send professional email notifications to debtors with a single click via EmailJS.' },
                   { title: 'Visual Analytics', desc: 'Beautiful charts and graphs to understand spending patterns.' },
                   { title: 'Real-time Sync', desc: 'Instant updates across all devices for all group members.' }
                 ].map((feature, i) => (
@@ -132,7 +133,7 @@ const CreditsPage = () => {
                   <div>
                     <h4 className="text-sm font-semibold text-slate-400 uppercase tracking-wider mb-3">Backend & Database</h4>
                     <div className="flex flex-wrap gap-2">
-                      {['Firebase Auth', 'Cloud Firestore', 'Cloud Functions'].map(tech => (
+                      {['Firebase Auth', 'Cloud Firestore', 'EmailJS'].map(tech => (
                         <Badge key={tech} variant="outline" className="bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-900/20 dark:text-emerald-300 dark:border-emerald-800">
                           {tech}
                         </Badge>

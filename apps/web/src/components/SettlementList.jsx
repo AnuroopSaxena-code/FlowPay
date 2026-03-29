@@ -1,4 +1,5 @@
 import React, { useState, useMemo } from 'react';
+import emailjs from '@emailjs/browser';
 import { db } from '@/lib/firebaseClient';
 import { 
   collection, 
@@ -14,7 +15,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { useToast } from '@/hooks/use-toast';
-import { CheckCircle2, Clock, Trash2, Plus, Sparkles, Mail } from 'lucide-react';
+import { CheckCircle2, Clock, Trash2, Plus, Sparkles, Mail, Loader2 } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
 
@@ -36,6 +37,7 @@ const SettlementList = () => {
     [members, currentUser]
   );
   
+  const [isSending, setIsSending] = useState(null);
   const [filter, setFilter] = useState('all'); // all, pending, completed
   
   // Form state for manual settlement entry
@@ -101,14 +103,33 @@ const SettlementList = () => {
     }
   };
 
-  const handleNotify = (s) => {
+  const handleNotify = async (s) => {
     const fromMember = members.find(m => m.id === s.fromMemberId);
+    const toMember = members.find(m => m.id === s.toMemberId);
+    
     if (!fromMember || !fromMember.email) return;
 
-    const subject = encodeURIComponent('Settlement Reminder - FlowPay');
-    const body = encodeURIComponent(`You owe ${currentMember?.name} (email: ${currentUser?.email}) ₹${s.amount.toFixed(2)}. Check the settlement on: ${window.location.href}`);
-    
-    window.location.href = `mailto:${fromMember.email}?subject=${subject}&body=${body}`;
+    setIsSending(s.id);
+    try {
+      await emailjs.send(
+        'service_5j2wm6l', 
+        'template_27knelj', 
+        {
+          to_name: fromMember.name,
+          from_name: toMember?.name || currentMember?.name,
+          from_email: currentUser?.email,
+          amount: s.amount.toFixed(2),
+          link: window.location.href,
+        }, 
+        'Kk8WwPJRWRVJgrrS7'
+      );
+      toast({ title: 'Success!', description: `Nudge email sent to ${fromMember.name}.` });
+    } catch (error) {
+      console.error('EmailJS Error:', error);
+      toast({ title: 'Error', description: 'Failed to send automated email.', variant: 'destructive' });
+    } finally {
+      setIsSending(null);
+    }
   };
 
   const handleDelete = async (id) => {
@@ -260,10 +281,11 @@ const SettlementList = () => {
                             variant="ghost" 
                             size="icon" 
                             onClick={() => handleNotify(s)} 
+                            disabled={isSending === s.id}
                             className="h-8 w-8 text-teal-600 hover:text-teal-700 hover:bg-teal-50"
-                            title="Send email notification"
+                            title="Send automated email notification"
                           >
-                            <Mail className="w-4 h-4" />
+                            {isSending === s.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <Mail className="w-4 h-4" />}
                           </Button>
                         )}
                         
