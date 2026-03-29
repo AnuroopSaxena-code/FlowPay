@@ -14,7 +14,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { useToast } from '@/hooks/use-toast';
-import { CheckCircle2, Clock, Trash2, Plus, Sparkles } from 'lucide-react';
+import { CheckCircle2, Clock, Trash2, Plus, Sparkles, Mail } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
 
@@ -30,6 +30,11 @@ const SettlementList = () => {
   } = useGroup();
   const { currentUser } = useAuth();
   const { toast } = useToast();
+
+  const currentMember = useMemo(() => 
+    members.find(m => m.userId === currentUser?.uid),
+    [members, currentUser]
+  );
   
   const [filter, setFilter] = useState('all'); // all, pending, completed
   
@@ -94,6 +99,16 @@ const SettlementList = () => {
     } catch (error) {
       toast({ title: 'Error', description: error.message, variant: 'destructive' });
     }
+  };
+
+  const handleNotify = (s) => {
+    const fromMember = members.find(m => m.id === s.fromMemberId);
+    if (!fromMember || !fromMember.email) return;
+
+    const subject = encodeURIComponent('Settlement Reminder - FlowPay');
+    const body = encodeURIComponent(`You owe ${currentMember?.name} (email: ${currentUser?.email}) ₹${s.amount.toFixed(2)}. Check the settlement on: ${window.location.href}`);
+    
+    window.location.href = `mailto:${fromMember.email}?subject=${subject}&body=${body}`;
   };
 
   const handleDelete = async (id) => {
@@ -239,19 +254,33 @@ const SettlementList = () => {
                       )}
                     </TableCell>
                     <TableCell className="text-right">
-                      {s.isSuggestion ? (
-                        <Button 
-                          variant="ghost" size="sm" 
-                          onClick={() => handleSettleSuggestion(s)}
-                          className="h-8 px-3 rounded-full text-xs bg-emerald-100 text-emerald-700 hover:bg-emerald-200 shadow-sm"
-                        >
-                          <CheckCircle2 className="w-4 h-4 mr-1" /> Settle Up
-                        </Button>
-                      ) : (
-                        <Button variant="ghost" size="icon" onClick={() => handleDelete(s.id)} className="h-8 w-8 text-red-500 hover:text-red-600 hover:bg-red-50">
-                          <Trash2 className="w-4 h-4" />
-                        </Button>
-                      )}
+                      <div className="flex justify-end gap-1">
+                        {s.status === 'pending' && currentMember?.id === s.toMemberId && members.find(m => m.id === s.fromMemberId)?.email && (
+                          <Button 
+                            variant="ghost" 
+                            size="icon" 
+                            onClick={() => handleNotify(s)} 
+                            className="h-8 w-8 text-teal-600 hover:text-teal-700 hover:bg-teal-50"
+                            title="Send email notification"
+                          >
+                            <Mail className="w-4 h-4" />
+                          </Button>
+                        )}
+                        
+                        {s.isSuggestion ? (
+                          <Button 
+                            variant="ghost" size="sm" 
+                            onClick={() => handleSettleSuggestion(s)}
+                            className="h-8 px-3 rounded-full text-xs bg-emerald-100 text-emerald-700 hover:bg-emerald-200 shadow-sm"
+                          >
+                            <CheckCircle2 className="w-4 h-4 mr-1" /> Settle Up
+                          </Button>
+                        ) : (
+                          <Button variant="ghost" size="icon" onClick={() => handleDelete(s.id)} className="h-8 w-8 text-red-500 hover:text-red-600 hover:bg-red-50">
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
+                        )}
+                      </div>
                     </TableCell>
                   </TableRow>
                 ))

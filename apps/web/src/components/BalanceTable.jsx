@@ -1,11 +1,29 @@
 import React, { useMemo } from 'react';
 import { useGroup } from '@/contexts/GroupContext';
+import { useAuth } from '@/contexts/AuthContext';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { ArrowRight, TrendingUp, TrendingDown } from 'lucide-react';
+import { ArrowRight, TrendingUp, TrendingDown, Mail } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 
 const BalanceTable = () => {
   const { currentGroupId, members, expenses, settlements, calculateBalances, calculateOptimalSettlements, loading } = useGroup();
+  const { currentUser } = useAuth();
+
+  const currentMember = useMemo(() => 
+    members.find(m => m.userId === currentUser?.uid),
+    [members, currentUser]
+  );
+
+  const handleNotify = (s) => {
+    const fromMember = members.find(m => m.id === s.fromId);
+    if (!fromMember || !fromMember.email) return;
+
+    const subject = encodeURIComponent('Settlement Reminder - FlowPay');
+    const body = encodeURIComponent(`You owe ${currentMember?.name} (email: ${currentUser?.email}) ₹${s.amount.toFixed(2)}. Check the settlement on: ${window.location.origin}/settlements`);
+    
+    window.location.href = `mailto:${fromMember.email}?subject=${subject}&body=${body}`;
+  };
 
   // Compute balances and optimal settlements reactively
   const { balances, suggestedSettlements } = useMemo(() => {
@@ -85,7 +103,20 @@ const BalanceTable = () => {
                     <ArrowRight className="w-4 h-4 text-muted-foreground" />
                     <span className="font-medium text-emerald-600 dark:text-emerald-400">{s.to}</span>
                   </div>
-                  <span className="font-bold text-lg">₹{s.amount.toFixed(2)}</span>
+                  <div className="flex items-center gap-3 font-bold text-lg">
+                    <span>₹{s.amount.toFixed(2)}</span>
+                    {currentMember?.id === s.toId && members.find(m => m.id === s.fromId)?.email && (
+                      <Button 
+                        variant="ghost" 
+                        size="icon" 
+                        onClick={() => handleNotify(s)} 
+                        className="h-8 w-8 text-teal-600 hover:text-teal-700 hover:bg-teal-50"
+                        title="Send email notification"
+                      >
+                        <Mail className="w-4 h-4" />
+                      </Button>
+                    )}
+                  </div>
                 </div>
               ))}
             </div>
