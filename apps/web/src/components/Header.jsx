@@ -13,7 +13,10 @@ const Header = () => {
   const { groups, currentGroupId, switchGroup } = useGroup();
   const location = useLocation();
   const navigate = useNavigate();
-  const [isDark, setIsDark] = useState(localStorage.getItem('theme') === 'dark');
+  const [isDark, setIsDark] = useState(() => {
+    const saved = localStorage.getItem('theme');
+    return saved ? saved === 'dark' : true;
+  });
 
   useEffect(() => {
     if (isDark) {
