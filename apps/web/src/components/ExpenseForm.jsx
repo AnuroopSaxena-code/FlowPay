@@ -217,7 +217,7 @@ const ExpenseForm = ({ expenseToEdit, onSuccess, onCancel }) => {
                       
                       <div className="flex items-center gap-2 w-28">
                         <Input 
-                          type="number" step="0.01" min="0" max="100"
+                          type="number" step="any" min="0" max="100"
                           value={splits[m.id] !== undefined ? Number(splits[m.id].toFixed(4)) : ''} 
                           onChange={e => handleSplitChange(m.id, e.target.value)}
                           className="h-8 text-right bg-white dark:bg-slate-950"
@@ -228,7 +228,7 @@ const ExpenseForm = ({ expenseToEdit, onSuccess, onCancel }) => {
                       <div className="flex items-center gap-2 w-32">
                         <span className="text-sm font-medium text-muted-foreground">₹</span>
                         <Input 
-                          type="number" step="0.01" min="0"
+                          type="number" step="any" min="0"
                           value={amtValue ? Number(amtValue.toFixed(2)) : ''}
                           onChange={e => handleAmountChange(m.id, e.target.value)}
                           className="h-8 text-right bg-white dark:bg-slate-950"
