@@ -12,7 +12,7 @@ import { Loader2, SplitSquareHorizontal } from 'lucide-react';
 const CATEGORIES = ['Food', 'Transport', 'Accommodation', 'Entertainment', 'Utilities', 'Shopping', 'Other'];
 
 const ExpenseForm = ({ expenseToEdit, onSuccess, onCancel }) => {
-  const { currentGroupId } = useGroup();
+  const { currentGroupId, fetchGroupData } = useGroup();
   const { toast } = useToast();
   
   const [members, setMembers] = useState([]);
@@ -143,6 +143,7 @@ const ExpenseForm = ({ expenseToEdit, onSuccess, onCancel }) => {
         setEqualSplits();
       }
       
+      await fetchGroupData(); // Sync global balances immediately
       if (onSuccess) onSuccess();
     } catch (error) {
       toast({ title: 'Error', description: error.message, variant: 'destructive' });

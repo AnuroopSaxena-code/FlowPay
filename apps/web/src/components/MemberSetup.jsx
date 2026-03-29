@@ -8,7 +8,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Plus, Trash2, Edit2, Loader2, UserPlus } from 'lucide-react';
 
 const MemberSetup = () => {
-  const { currentGroupId } = useGroup();
+  const { currentGroupId, fetchGroupData } = useGroup();
   const { toast } = useToast();
   
   const [members, setMembers] = useState([]);
@@ -56,6 +56,7 @@ const MemberSetup = () => {
       setFormData({ name: '', email: '' });
       setEditingId(null);
       await fetchMembers();
+      await fetchGroupData(); // Sync global balances immediately
     } catch (error) {
       toast({ title: 'Error', description: error.message, variant: 'destructive' });
     } finally {
@@ -99,6 +100,7 @@ const MemberSetup = () => {
       await pb.collection('members').delete(id, { $autoCancel: false });
       toast({ title: 'Success', description: 'Member removed' });
       await fetchMembers();
+      await fetchGroupData(); // Sync global balances immediately
     } catch (error) {
       toast({ title: 'Error', description: error.message, variant: 'destructive' });
     }

@@ -8,6 +8,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Card, CardContent } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
 import { Edit2, Trash2, Search, Filter, Calendar } from 'lucide-react';
+import DeleteExpenseDialog from './DeleteExpenseDialog';
 
 const CATEGORY_COLORS = {
   Food: 'bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-300',
@@ -20,7 +21,7 @@ const CATEGORY_COLORS = {
 };
 
 const ExpenseList = ({ onEdit, refreshTrigger }) => {
-  const { currentGroupId } = useGroup();
+  const { currentGroupId, fetchGroupData } = useGroup();
   const { toast } = useToast();
   
   const [expenses, setExpenses] = useState([]);
@@ -31,6 +32,10 @@ const ExpenseList = ({ onEdit, refreshTrigger }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('all');
   const [sortOrder, setSortOrder] = useState('-date');
+
+  // Delete dialog state
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [expenseToDelete, setExpenseToDelete] = useState(null);
 
   useEffect(() => {
     if (currentGroupId) {
@@ -69,15 +74,9 @@ const ExpenseList = ({ onEdit, refreshTrigger }) => {
     if (currentGroupId && !loading) fetchData();
   }, [sortOrder]);
 
-  const handleDelete = async (id) => {
-    if (!window.confirm('Are you sure you want to delete this expense?\n\nNOTE: Since balances are continuously calculated, deleting this expense will NOT automatically delete any payments you made to settle it. If you already settled this expense, please make sure to also delete the corresponding payment from the "Settlements" tab.')) return;
-    try {
-      await pb.collection('expenses').delete(id, { $autoCancel: false });
-      toast({ title: 'Success', description: 'Expense deleted' });
-      fetchData();
-    } catch (error) {
-      toast({ title: 'Error', description: error.message, variant: 'destructive' });
-    }
+  const handleDeleteClick = (expense) => {
+    setExpenseToDelete(expense);
+    setIsDeleteDialogOpen(true);
   };
 
   const filteredExpenses = expenses.filter(exp => {
@@ -164,7 +163,7 @@ const ExpenseList = ({ onEdit, refreshTrigger }) => {
                         <Button variant="ghost" size="icon" onClick={() => onEdit(exp)} className="h-8 w-8">
                           <Edit2 className="w-4 h-4" />
                         </Button>
-                        <Button variant="ghost" size="icon" onClick={() => handleDelete(exp.id)} className="h-8 w-8 text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30">
+                        <Button variant="ghost" size="icon" onClick={() => handleDeleteClick(exp)} className="h-8 w-8 text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30">
                           <Trash2 className="w-4 h-4" />
                         </Button>
                       </div>
@@ -175,6 +174,13 @@ const ExpenseList = ({ onEdit, refreshTrigger }) => {
             </TableBody>
           </Table>
         </div>
+
+        <DeleteExpenseDialog 
+          open={isDeleteDialogOpen} 
+          onOpenChange={setIsDeleteDialogOpen} 
+          expense={expenseToDelete} 
+          onDeleteSuccess={fetchData} 
+        />
       </CardContent>
     </Card>
   );

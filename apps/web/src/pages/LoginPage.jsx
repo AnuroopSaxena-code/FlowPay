@@ -75,9 +75,6 @@ const LoginPage = () => {
               Sign up
             </Link>
           </div>
-          <div className="mt-4 text-center text-xs text-muted-foreground">
-            Demo Account: demo@expensedash.com / demo123456
-          </div>
         </CardContent>
       </Card>
     </div>

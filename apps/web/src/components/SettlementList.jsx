@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useMemo } from 'react';
 import pb from '@/lib/pocketbaseClient';
 import { useGroup } from '@/contexts/GroupContext';
 import { Button } from '@/components/ui/button';
@@ -10,56 +10,40 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Input } from '@/components/ui/input';
 
 const SettlementList = () => {
-  const { currentGroupId, calculateBalances, calculateOptimalSettlements, fetchGroupData } = useGroup();
+  const { 
+    currentGroupId, 
+    calculateBalances, 
+    calculateOptimalSettlements, 
+    fetchGroupData,
+    members,
+    expenses,
+    settlements
+  } = useGroup();
   const { toast } = useToast();
   
-  const [settlements, setSettlements] = useState([]);
-  const [members, setMembers] = useState([]);
-  const [pendingSuggestions, setPendingSuggestions] = useState([]);
-  const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState('all'); // all, pending, completed
   
   // Form state for manual settlement entry
   const [showForm, setShowForm] = useState(false);
   const [formData, setFormData] = useState({ fromMemberId: '', toMemberId: '', amount: '', date: new Date().toISOString().split('T')[0] });
 
-  useEffect(() => {
-    if (currentGroupId) {
-      fetchData();
-    }
-  }, [currentGroupId]);
+  // Calculate active debts and transform them into pending suggestions reactively
+  const pendingSuggestions = useMemo(() => {
+    if (!members.length) return [];
+    
+    const balances = calculateBalances(members, expenses, settlements);
+    const suggestions = calculateOptimalSettlements(balances);
+    
+    return suggestions.map((s, i) => ({
+      id: `suggestion_${i}`,
+      fromMemberId: s.fromId,
+      toMemberId: s.toId,
+      amount: s.amount,
+      status: 'pending',
+      isSuggestion: true
+    }));
+  }, [members, expenses, settlements, calculateBalances, calculateOptimalSettlements]);
 
-  const fetchData = async () => {
-    setLoading(true);
-    try {
-      const [membersData, settlementsData, expensesData] = await Promise.all([
-        pb.collection('members').getFullList({ filter: `groupId = "${currentGroupId}"`, $autoCancel: false }),
-        pb.collection('settlements').getFullList({ filter: `groupId = "${currentGroupId}"`, sort: '-created', $autoCancel: false }),
-        pb.collection('expenses').getFullList({ filter: `groupId = "${currentGroupId}"`, $autoCancel: false })
-      ]);
-      
-      setMembers(membersData);
-      setSettlements(settlementsData);
-      
-      // Calculate active debts and transform them into pending suggestions
-      const balances = calculateBalances(membersData, expensesData, settlementsData);
-      const suggestions = calculateOptimalSettlements(balances);
-      
-      setPendingSuggestions(suggestions.map((s, i) => ({
-        id: `suggestion_${i}`,
-        fromMemberId: s.fromId,
-        toMemberId: s.toId,
-        amount: s.amount,
-        status: 'pending',
-        isSuggestion: true
-      })));
-
-    } catch (error) {
-      console.error('Error fetching data:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const getMemberName = (id) => members.find(m => m.id === id)?.name || 'Unknown';
 
@@ -74,8 +58,7 @@ const SettlementList = () => {
       }, { $autoCancel: false });
       
       toast({ title: 'Success', description: `Marked as ${newStatus}` });
-      await fetchData();
-      fetchGroupData(); // Sync cross-app state
+      await fetchGroupData(); // Sync global balances immediately
     } catch (error) {
       toast({ title: 'Error', description: error.message, variant: 'destructive' });
     }
@@ -94,8 +77,7 @@ const SettlementList = () => {
       }, { $autoCancel: false });
       
       toast({ title: 'Success', description: 'Debt recorded and settled!' });
-      await fetchData();
-      fetchGroupData(); // Sync cross-app state
+      await fetchGroupData(); // Sync global balances immediately
     } catch (error) {
       toast({ title: 'Error', description: error.message, variant: 'destructive' });
     }
@@ -106,8 +88,7 @@ const SettlementList = () => {
     try {
       await pb.collection('settlements').delete(id, { $autoCancel: false });
       toast({ title: 'Success', description: 'Record deleted' });
-      await fetchData();
-      fetchGroupData(); // Sync cross-app state
+      await fetchGroupData(); // Sync global balances immediately
     } catch (error) {
       toast({ title: 'Error', description: error.message, variant: 'destructive' });
     }
@@ -133,8 +114,7 @@ const SettlementList = () => {
       toast({ title: 'Success', description: 'Settlement recorded' });
       setShowForm(false);
       setFormData({ fromMemberId: '', toMemberId: '', amount: '', date: new Date().toISOString().split('T')[0] });
-      await fetchData();
-      fetchGroupData(); // Sync cross-app state
+      await fetchGroupData(); // Sync global balances immediately
     } catch (error) {
       toast({ title: 'Error', description: error.message, variant: 'destructive' });
     }
@@ -208,9 +188,7 @@ const SettlementList = () => {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {loading ? (
-                <TableRow><TableCell colSpan={6} className="text-center py-8">Loading...</TableCell></TableRow>
-              ) : filteredSettlements.length === 0 ? (
+              {filteredSettlements.length === 0 ? (
                 <TableRow><TableCell colSpan={6} className="text-center py-8 text-muted-foreground">No records found for this filter.</TableCell></TableRow>
               ) : (
                 filteredSettlements.map(s => (
