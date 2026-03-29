@@ -30,10 +30,10 @@ export const AuthProvider = ({ children }) => {
   const login = async (email, password) => {
     const userCredential = await signInWithEmailAndPassword(auth, email, password);
     
-    // Email verification check (Enforced in production)
-    if (import.meta.env.PROD && !userCredential.user.emailVerified && !email.includes('admin')) {
+    // Strictly enforce email verification in production
+    if (import.meta.env.PROD && !userCredential.user.emailVerified) {
       await signOut(auth);
-      throw new Error('Please verify your email before logging in.');
+      throw new Error('Please verify your email before logging in. Check your inbox for the verification link.');
     }
     
     return userCredential.user;
@@ -58,6 +58,9 @@ export const AuthProvider = ({ children }) => {
     } catch (e) {
       console.error('Failed to send verification email:', e);
     }
+
+    // Immediately sign out to prevent auto-login
+    await signOut(auth);
     
     return userCredential.user;
   };
