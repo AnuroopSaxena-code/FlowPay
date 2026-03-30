@@ -206,14 +206,14 @@ const SettlementList = () => {
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <div className="flex gap-2">
-          <Button variant={filter === 'all' ? 'default' : 'outline'} onClick={() => setFilter('all')} size="sm">All</Button>
-          <Button variant={filter === 'pending' ? 'default' : 'outline'} onClick={() => setFilter('pending')} size="sm">Pending</Button>
-          <Button variant={filter === 'completed' ? 'default' : 'outline'} onClick={() => setFilter('completed')} size="sm">Completed</Button>
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <div className="flex gap-2 overflow-x-auto pb-2 sm:pb-0 w-full sm:w-auto">
+          <Button variant={filter === 'all' ? 'default' : 'outline'} onClick={() => setFilter('all')} size="sm" className="flex-shrink-0">All</Button>
+          <Button variant={filter === 'pending' ? 'default' : 'outline'} onClick={() => setFilter('pending')} size="sm" className="flex-shrink-0">Pending</Button>
+          <Button variant={filter === 'completed' ? 'default' : 'outline'} onClick={() => setFilter('completed')} size="sm" className="flex-shrink-0">Completed</Button>
         </div>
-        <Button onClick={() => setShowForm(!showForm)} variant="outline" className="border-teal-200 text-teal-700 hover:bg-teal-50">
-          <Plus className="w-4 h-4 mr-2" /> Record Manual Payment
+        <Button onClick={() => setShowForm(!showForm)} variant="outline" className="border-teal-200 text-teal-700 hover:bg-teal-50 w-full sm:w-auto overflow-hidden text-ellipsis whitespace-nowrap">
+          <Plus className="w-4 h-4 mr-2 flex-shrink-0" /> <span className="truncate">Record Manual Payment</span>
         </Button>
       </div>
 
@@ -258,7 +258,7 @@ const SettlementList = () => {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Date</TableHead>
+                <TableHead className="hidden md:table-cell">Date</TableHead>
                 <TableHead>From</TableHead>
                 <TableHead>To</TableHead>
                 <TableHead className="text-right">Amount</TableHead>
@@ -272,11 +272,11 @@ const SettlementList = () => {
               ) : (
                 filteredSettlements.map(s => (
                   <TableRow key={s.id} className={s.isSuggestion ? "bg-amber-50/30 dark:bg-amber-950/20" : ""}>
-                    <TableCell className="text-sm text-muted-foreground">
+                    <TableCell className="text-sm text-muted-foreground hidden md:table-cell">
                       {s.date ? new Date(s.date).toLocaleDateString() : (s.isSuggestion ? '-' : '-')}
                     </TableCell>
-                    <TableCell className="font-medium">{getMemberName(s.fromMemberId)}</TableCell>
-                    <TableCell className="font-medium">{getMemberName(s.toMemberId)}</TableCell>
+                    <TableCell className="font-medium truncate max-w-[70px] sm:max-w-none">{getMemberName(s.fromMemberId)}</TableCell>
+                    <TableCell className="font-medium truncate max-w-[70px] sm:max-w-none">{getMemberName(s.toMemberId)}</TableCell>
                     <TableCell className="text-right">
                       <div className="font-bold">₹{s.amount.toFixed(2)}</div>
                       {!s.isSuggestion && s.creatorName && (

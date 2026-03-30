@@ -84,7 +84,7 @@ const BalanceTable = () => {
               <TableBody>
                 {balances.map((b) => (
                   <TableRow key={b.id}>
-                    <TableCell className="font-medium">{b.name}</TableCell>
+                    <TableCell className="font-medium max-w-[120px] truncate sm:max-w-none">{b.name}</TableCell>
                     <TableCell className={`text-right font-bold ${b.balance > 0 ? 'text-emerald-600' : b.balance < 0 ? 'text-rose-600' : 'text-muted-foreground'}`}>
                       <div className="flex items-center justify-end gap-1">
                         {b.balance > 0 ? <TrendingUp className="w-4 h-4" /> : b.balance < 0 ? <TrendingDown className="w-4 h-4" /> : null}
@@ -121,13 +121,13 @@ const BalanceTable = () => {
           ) : (
             <div className="space-y-3">
               {suggestedSettlements.map((s, i) => (
-                <div key={i} className="flex items-center justify-between p-3 bg-white dark:bg-slate-900 rounded-lg shadow-sm border border-teal-100 dark:border-teal-900">
+                <div key={i} className="flex flex-col sm:flex-row sm:items-center justify-between p-3 bg-white dark:bg-slate-900 rounded-lg shadow-sm border border-teal-100 dark:border-teal-900 gap-3">
                   <div className="flex items-center gap-3">
-                    <span className="font-medium text-rose-600 dark:text-rose-400">{s.from}</span>
-                    <ArrowRight className="w-4 h-4 text-muted-foreground" />
-                    <span className="font-medium text-emerald-600 dark:text-emerald-400">{s.to}</span>
+                    <span className="font-medium text-rose-600 dark:text-rose-400 truncate max-w-[100px] sm:max-w-none">{s.from}</span>
+                    <ArrowRight className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+                    <span className="font-medium text-emerald-600 dark:text-emerald-400 truncate max-w-[100px] sm:max-w-none">{s.to}</span>
                   </div>
-                  <div className="flex items-center gap-3 font-bold text-lg">
+                  <div className="flex items-center justify-between sm:justify-end gap-3 font-bold text-lg">
                     <span>₹{s.amount.toFixed(2)}</span>
                     {currentMember?.id === s.toId && members.find(m => m.id === s.fromId)?.email && (
                       <Button 

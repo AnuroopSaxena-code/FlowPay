@@ -1,4 +1,8 @@
-# FlowPay 💸
+<p align="center">
+  <img src="logo.png" alt="FlowPay Logo" width="128" height="128">
+</p>
+
+# FlowPay
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![React](https://img.shields.io/badge/Frontend-React%2018-blue.svg)](https://reactjs.org/)
@@ -65,7 +69,7 @@ FlowPay/
 
 ### Prerequisites
 - [Node.js](https://nodejs.org/) (v18 or higher recommended)
-- [NPM](https://www.npmjs.com/) or Yarn
+- [NPM](https://www.npmjs.com/)
 
 ### 1. Clone the Repository
 ```bash
@@ -85,7 +89,6 @@ Navigate to the web app directory and create a `.env` file based on your require
 ```bash
 cd apps/web
 # Create a .env file with the following variables:
-VITE_PB_URL=http://127.0.0.1:8090
 VITE_FIREBASE_API_KEY=your_api_key
 VITE_FIREBASE_AUTH_DOMAIN=your_auth_domain
 VITE_FIREBASE_PROJECT_ID=your_project_id
