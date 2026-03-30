@@ -17,12 +17,12 @@ const DashboardPage = () => {
         <h1 className="text-3xl font-bold mb-8">Dashboard</h1>
         
         <div className="grid lg:grid-cols-3 gap-8">
-          <div className="lg:col-span-1 space-y-8">
+          <div className="lg:col-span-1 min-w-0 space-y-8">
             <GroupManagement />
             {currentGroupId && <MemberSetup />}
           </div>
           
-          <div className="lg:col-span-2">
+          <div className="lg:col-span-2 min-w-0">
             {currentGroupId ? (
               <BalanceTable />
             ) : (

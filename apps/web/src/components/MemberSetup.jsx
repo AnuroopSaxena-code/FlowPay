@@ -187,14 +187,14 @@ const MemberSetup = () => {
           ) : (
             members.map(member => (
               <div key={member.id} className="flex items-center justify-between p-3 rounded-lg bg-muted/30 border hover:bg-muted/50 transition-colors">
-                <div className="flex flex-col">
-                  <span className="font-medium flex items-center gap-2">
-                    {member.name}
+                <div className="flex flex-col min-w-0">
+                  <span className="font-medium flex items-center gap-2 truncate">
+                    <span className="truncate">{member.name}</span>
                     {member.userId === currentGroup?.owner && (
-                      <span className="text-[10px] bg-teal-100 text-teal-700 dark:bg-teal-900/40 dark:text-teal-400 px-1.5 py-0.5 rounded border border-teal-200 dark:border-teal-800 uppercase tracking-tighter font-bold">Owner</span>
+                      <span className="text-[10px] bg-teal-100 text-teal-700 dark:bg-teal-900/40 dark:text-teal-400 px-1.5 py-0.5 rounded border border-teal-200 dark:border-teal-800 uppercase tracking-tighter font-bold flex-shrink-0">Owner</span>
                     )}
                   </span>
-                  {member.email && <span className="text-xs text-muted-foreground">{member.email}</span>}
+                  {member.email && <span className="text-xs text-muted-foreground truncate">{member.email}</span>}
                 </div>
                 {isOwner && member.userId !== currentUser.uid && (
                   <div className="flex gap-1">

@@ -219,9 +219,9 @@ const GroupManagement = () => {
           ) : (
             groups.map(group => (
               <div key={group.id} className={`flex items-center justify-between p-4 rounded-lg border transition-colors ${currentGroupId === group.id ? 'border-teal-500 bg-teal-50/50 dark:bg-teal-950/20' : 'hover:bg-muted/50'}`}>
-                <div>
-                  <h4 className="font-semibold">{group.name}</h4>
-                  {group.description && <p className="text-sm text-muted-foreground">{group.description}</p>}
+                <div className="min-w-0 pr-2">
+                  <h4 className="font-semibold truncate">{group.name}</h4>
+                  {group.description && <p className="text-sm text-muted-foreground truncate">{group.description}</p>}
                 </div>
                 <div className="flex items-center gap-2">
                   <Button 
