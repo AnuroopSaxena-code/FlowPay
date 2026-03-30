@@ -1,8 +1,7 @@
 <p align="center">
   <img src="logo.png" alt="FlowPay Logo" width="128" height="128">
+  <h1 align="center">FlowPay</h1>
 </p>
-
-# FlowPay
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![React](https://img.shields.io/badge/Frontend-React%2018-blue.svg)](https://reactjs.org/)
