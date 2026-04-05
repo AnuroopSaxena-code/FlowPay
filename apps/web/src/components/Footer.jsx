@@ -119,23 +119,15 @@ const Footer = () => {
 
           {/* Credit pill with shimmer */}
           <div
-            className="shimmer flex items-center gap-1.5 text-xs text-slate-400 px-4 py-2 rounded-full"
+            className="flex items-center gap-1.5 text-xs text-slate-400 px-4 py-2 rounded-full"
             style={{
               background: 'rgba(255,255,255,0.04)',
               border: '1px solid rgba(255,255,255,0.08)',
               boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.06)',
             }}
           >
-            <span>Made with</span>
-            <span
-              className="text-transparent bg-clip-text font-bold"
-              style={{ background: 'linear-gradient(90deg, #2dd4bf, #a78bfa)', WebkitBackgroundClip: 'text' }}
-            >
-              ♥
-            </span>
-            <span>by</span>
+            <span>Made by</span>
             <span className="font-semibold text-slate-200">Anuroop Saxena</span>
-            <span className="text-slate-600">(24BDS0163)</span>
           </div>
         </div>
       </div>

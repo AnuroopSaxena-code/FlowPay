@@ -172,49 +172,6 @@ const HomePage = () => {
                 )}
               </motion.div>
 
-              {/* Floating mock card */}
-              <motion.div
-                initial={{ opacity: 0, y: 40, rotateX: 12 }}
-                animate={{ opacity: 1, y: 0,  rotateX: 0  }}
-                transition={{ duration: 0.8, delay: 0.5, type: 'spring', stiffness: 80 }}
-                className="mt-16 mx-auto max-w-sm float"
-                style={{ perspective: '1000px' }}
-                aria-hidden="true"
-              >
-                <div
-                  className="rounded-2xl p-5 text-left"
-                  style={{
-                    background: 'rgba(15,23,42,0.7)',
-                    backdropFilter: 'blur(20px)',
-                    border: '1px solid rgba(255,255,255,0.1)',
-                    boxShadow: '0 0 0 1px rgba(255,255,255,0.05), 0 24px 64px rgba(0,0,0,0.5), 0 0 40px rgba(20,184,166,0.1), inset 0 1px 0 rgba(255,255,255,0.1)',
-                  }}
-                >
-                  <div className="flex items-center justify-between mb-4">
-                    <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Latest Expense</span>
-                    <span className="text-xs px-2 py-0.5 rounded-full font-semibold text-teal-300" style={{ background: 'rgba(20,184,166,0.12)', border: '1px solid rgba(45,212,191,0.2)' }}>Settled</span>
-                  </div>
-                  <p className="text-lg font-bold text-white mb-1">Team Dinner 🍜</p>
-                  <p className="text-3xl font-extrabold gradient-text mb-4">₹2,400</p>
-                  <div className="flex -space-x-2">
-                    {['A', 'R', 'P', 'S'].map((l, i) => (
-                      <div
-                        key={i}
-                        className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold text-white border-2 border-slate-900"
-                        style={{
-                          background: ['#0d9488','#7c3aed','#0ea5e9','#f59e0b'][i],
-                        }}
-                      >
-                        {l}
-                      </div>
-                    ))}
-                    <div className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold text-slate-400 border-2 border-slate-900"
-                      style={{ background: 'rgba(255,255,255,0.06)' }}>
-                      +2
-                    </div>
-                  </div>
-                </div>
-              </motion.div>
             </div>
           </div>
         </section>

@@ -5,9 +5,10 @@ import MemberSetup from '@/components/MemberSetup';
 import BalanceTable from '@/components/BalanceTable';
 import { useGroup } from '@/contexts/GroupContext';
 import { Users } from 'lucide-react';
+import { Skeleton } from '@/components/ui/skeleton';
 
 const DashboardPage = () => {
-  const { currentGroupId } = useGroup();
+  const { currentGroupId, loading } = useGroup();
 
   return (
     <>
@@ -19,31 +20,55 @@ const DashboardPage = () => {
       <div className="container mx-auto px-4 sm:px-8 py-8 md:py-12 max-w-6xl min-h-screen">
         {/* Page header */}
         <header className="mb-8 flex items-center gap-3">
-          <div
-            className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
-            style={{
-              background: 'linear-gradient(135deg, #0d9488, #14b8a6)',
-              boxShadow: '0 0 16px rgba(20,184,166,0.4), inset 0 1px 0 rgba(255,255,255,0.2)',
-            }}
-          >
-            <Users className="w-5 h-5 text-white" />
-          </div>
-          <div>
-            <h1 className="text-3xl font-extrabold gradient-text leading-tight">Dashboard</h1>
-            <p className="text-sm text-muted-foreground mt-0.5">Manage your group expenses and balances</p>
+          {loading ? (
+            <Skeleton className="w-10 h-10 rounded-xl" />
+          ) : (
+            <div
+              className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
+              style={{
+                background: 'linear-gradient(135deg, #0d9488, #14b8a6)',
+                boxShadow: '0 0 16px rgba(20,184,166,0.4), inset 0 1px 0 rgba(255,255,255,0.2)',
+              }}
+            >
+              <Users className="w-5 h-5 text-white" />
+            </div>
+          )}
+          <div className="space-y-2">
+            {loading ? (
+              <>
+                <Skeleton className="h-8 w-48" />
+                <Skeleton className="h-4 w-64" />
+              </>
+            ) : (
+              <>
+                <h1 className="text-3xl font-extrabold gradient-text leading-tight">Dashboard</h1>
+                <p className="text-sm text-muted-foreground mt-0.5">Manage your group expenses and balances</p>
+              </>
+            )}
           </div>
         </header>
 
         <div className="grid lg:grid-cols-3 gap-6 lg:gap-8">
           {/* Sidebar */}
           <div className="lg:col-span-1 min-w-0 space-y-6">
-            <GroupManagement />
-            {currentGroupId && <MemberSetup />}
+            {loading ? (
+              <>
+                <Skeleton className="h-[200px] w-full rounded-2xl" />
+                <Skeleton className="h-[300px] w-full rounded-2xl" />
+              </>
+            ) : (
+              <>
+                <GroupManagement />
+                {currentGroupId && <MemberSetup />}
+              </>
+            )}
           </div>
 
           {/* Main content */}
           <div className="lg:col-span-2 min-w-0">
-            {currentGroupId ? (
+            {loading ? (
+              <Skeleton className="h-[500px] w-full rounded-2xl" />
+            ) : currentGroupId ? (
               <BalanceTable />
             ) : (
               <div
